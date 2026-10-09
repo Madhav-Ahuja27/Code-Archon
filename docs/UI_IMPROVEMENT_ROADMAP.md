@@ -18,12 +18,13 @@ This roadmap prioritizes user trust and visibility over decorative polish. Inves
 - Display Docker, Neo4j, and Redis host probes with an explicit warning that reachability alone does not prove the current run uses that service.
 - Keep the full /live systems view available for deeper diagnosis.
 
-## Step 3 — Improve evidence navigation (in progress)
+## Step 3 — Improve evidence navigation (partially implemented; runtime verification pending)
 
 - [x] Add search and status filters to findings and unresolved items.
-- [ ] Make every supported claim open its cited file and line window.
-- Explain which evidence supports, contradicts, or fails to establish each claim.
-- Make evidence provenance and missing provenance visually distinct.
+- [x] Make every finding with an embedded source reference open its cited file and highlighted line window.
+- [x] Explain why source lines cannot be shown when provenance is missing or no excerpt was embedded.
+- [x] Make evidence references clickable and missing provenance visually distinct.
+- [ ] Add explicit per-evidence support/contradiction/insufficient labels from structured evidence metadata; do not infer them from text.
 
 ## Step 4 — Make the systems view easier to operate (planned)
 
