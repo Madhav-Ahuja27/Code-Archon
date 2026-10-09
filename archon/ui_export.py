@@ -200,11 +200,31 @@ def build_ui(store, parse_result, final, repo, goal, session, mode, out_path) ->
     tasks = []
     all_tasks = list(final.get("tasks", []) or [])
     unknown_set = set(final.get("unknowns", []) or [])
+    not_verified = []
     for i, task in enumerate(all_tasks):
         matched = [finding for finding in findings if finding["task"] == task]
-        tasks.append({"index": i + 1, "task": task,
-                      "status": "VERIFIED" if matched else ("UNRESOLVED" if task in unknown_set else "NOT VERIFIED"),
-                      "finding_ids": [f["id"] for f in matched]})
+        status = "VERIFIED" if matched else ("UNRESOLVED" if task in unknown_set else "NOT VERIFIED")
+        task_row = {"index": i + 1, "task": task, "status": status,
+                    "verification_label": "VERIFIED" if status == "VERIFIED" else "NOT VERIFIED",
+                    "status_detail": "A verified finding was recorded for this task." if status == "VERIFIED" else
+                                     ("The task was attempted but no verified conclusion was established." if status == "UNRESOLVED" else
+                                      "No verified finding was linked to this task; treat the result as unknown, not false."),
+                    "finding_ids": [f["id"] for f in matched]}
+        tasks.append(task_row)
+        if status != "VERIFIED":
+            not_verified.append({"task": task, "status": status, "reason": task_row["status_detail"],
+                                 "evidence_count": 0})
+    # Keep a final in-flight hypothesis visible if it was not promoted to a verified graph finding.
+    hypothesis = final.get("hypothesis")
+    if hasattr(hypothesis, "model_dump"):
+        hypothesis = hypothesis.model_dump()
+    if isinstance(hypothesis, dict):
+        claim = str(hypothesis.get("claim", "") or "").strip()
+        hstatus = str(hypothesis.get("status", "PENDING") or "PENDING").upper()
+        if claim and hstatus != "VERIFIED" and not any(x["task"] == claim for x in not_verified):
+            not_verified.append({"task": claim, "status": hstatus,
+                                 "reason": "This hypothesis was not promoted as a verified finding.",
+                                 "evidence_count": len(hypothesis.get("evidence", []) or [])})
 
     artifact_list = [
         _artifact(output_dir / "report.md", "markdown", "Investigation report"),
