@@ -461,9 +461,50 @@ def build_agent_graph(
 ):
     """Build and compile the LangGraph StateGraph."""
 
-    def wrap(fn):
+    def wrap(fn, node_name="node"):
         def _wrapped(state_dict):
-            return fn(AgentState(**state_dict)).model_dump()
+            from archon.observability.events import emit_event
+            state = AgentState(**state_dict)
+            before_tools = len(state.tool_calls)
+            emit_event(
+                "node_started", stage=node_name,
+                message=f"{node_name} started",
+                details={"task": state.current_task, "iteration": state.iteration,
+                         "task_index": state.task_index, "phase": state.phase.value},
+            )
+            try:
+                result = fn(state)
+            except Exception as exc:
+                emit_event("node_failed", stage=node_name, message=f"{node_name} raised an exception",
+                           details={"error": str(exc)[:3000], "task": state.current_task,
+                                    "iteration": state.iteration})
+                raise
+            for call in result.tool_calls[before_tools:]:
+                emit_event(
+                    "tool_call", stage=node_name,
+                    message=str(call.get("tool") or "Tool call"),
+                    details={
+                        "tool": call.get("tool", ""),
+                        "input": str(call.get("input", ""))[:3000],
+                        "output": str(call.get("output", ""))[:5000],
+                        "error": str(call.get("error", ""))[:3000],
+                        "source": str(call.get("source", ""))[:1000],
+                    },
+                )
+            emit_event(
+                "node_completed", stage=node_name,
+                message=f"{node_name} completed",
+                details={
+                    "phase": result.phase.value, "task": result.current_task,
+                    "iteration": result.iteration, "task_index": result.task_index,
+                    "task_count": len(result.tasks), "evidence_count": len(result.evidence),
+                    "tool_call_count": len(result.tool_calls), "finding_count": len(result.findings),
+                    "unknown_count": len(result.unknowns), "rejected_count": len(result.rejected),
+                    "hypothesis_status": result.hypothesis.status if result.hypothesis else None,
+                    "last_failure": result.last_failure, "error": result.error,
+                },
+            )
+            return result.model_dump()
         return _wrapped
 
     def wrap_router(fn):
@@ -473,17 +514,17 @@ def build_agent_graph(
 
     builder = StateGraph(dict)
     builder.add_node("plan", wrap(lambda s: node_plan(s, llm=llm, harness=harness,
-                                                       max_iterations=max_iterations)))
+                                                       max_iterations=max_iterations), "PLAN"))
     builder.add_node("act", wrap(lambda s: node_act(s, harness=harness, ctx_engine=ctx_engine,
-                                                     repo_root=repo_root, store=store)))
-    builder.add_node("observe", wrap(lambda s: node_observe(s, llm=llm)))
-    builder.add_node("verify", wrap(lambda s: node_verify(s, llm=llm)))
-    builder.add_node("update_graph", wrap(lambda s: node_update_graph(s, store=store)))
+                                                     repo_root=repo_root, store=store), "ACT"))
+    builder.add_node("observe", wrap(lambda s: node_observe(s, llm=llm), "OBSERVE"))
+    builder.add_node("verify", wrap(lambda s: node_verify(s, llm=llm), "VERIFY"))
+    builder.add_node("update_graph", wrap(lambda s: node_update_graph(s, store=store), "UPDATE_GRAPH"))
     builder.add_node("identify_unknowns", wrap(lambda s: node_identify_unknowns(
-        s, store=store, max_iterations=max_iterations)))
+        s, store=store, max_iterations=max_iterations), "IDENTIFY_UNKNOWNS"))
     builder.add_node("investigate", wrap(lambda s: node_investigate(
-        s, llm=llm, repo_summary=repo_summary)))
-    builder.add_node("complete", wrap(node_complete))
+        s, llm=llm, repo_summary=repo_summary), "INVESTIGATE"))
+    builder.add_node("complete", wrap(node_complete, "COMPLETE"))
 
     builder.set_entry_point("plan")
     builder.add_conditional_edges(
