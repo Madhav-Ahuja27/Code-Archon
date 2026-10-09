@@ -32,7 +32,7 @@ This roadmap prioritizes user trust and visibility over decorative polish. Inves
 - Make the progress dialog keyboard-operable with Escape-to-close, focus containment, focus restoration, and background scroll locking.
 - Respect reduced-motion preferences.
 
-## Step 4 — Make the systems view easier to operate (planned)
+## Step 4 — Make the systems view easier to operate (partially implemented; runtime verification pending)
 
 - Group events by investigation stage and collapse repetitive low-level events by default.
 - Add pause/resume auto-refresh, clear stale-data indicators, and copy/export for event payloads.
