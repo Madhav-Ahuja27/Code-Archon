@@ -24,7 +24,7 @@ This roadmap prioritizes user trust and visibility over decorative polish. Inves
 - [x] Make every finding with an embedded source reference open its cited file and highlighted line window.
 - [x] Explain why source lines cannot be shown when provenance is missing or no excerpt was embedded.
 - [x] Make evidence references clickable and missing provenance visually distinct.
-- [ ] Add explicit per-evidence support/contradiction/insufficient labels from structured evidence metadata; do not infer them from text.
+- [x] Add explicit per-evidence support/contradiction/insufficient labels; show Supports/Contradicts only when structured metadata exists, otherwise label Insufficient metadata without inferring from excerpt text.
 
 ## Frontend usability pass — navigation and keyboard access (implemented; runtime verification pending)
 
