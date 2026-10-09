@@ -466,6 +466,8 @@ def build_agent_graph(
             from archon.observability.events import emit_event
             state = AgentState(**state_dict)
             before_tools = len(state.tool_calls)
+            before_evidence = len(state.evidence)
+            before_findings = len(state.findings)
             emit_event(
                 "node_started", stage=node_name,
                 message=f"{node_name} started",
@@ -491,6 +493,17 @@ def build_agent_graph(
                         "source": str(call.get("source", ""))[:1000],
                     },
                 )
+            for evidence in result.evidence[before_evidence:]:
+                emit_event(
+                    "evidence_collected", stage=node_name,
+                    message=f"Evidence from {evidence.source}",
+                    details={"source": evidence.source, "tool": evidence.tool,
+                             "content": evidence.content[:3000]},
+                )
+            for finding in result.findings[before_findings:]:
+                emit_event("finding_recorded", stage=node_name,
+                           message="A finding was accepted into the investigation",
+                           details={"finding": finding[:4000]})
             emit_event(
                 "node_completed", stage=node_name,
                 message=f"{node_name} completed",
@@ -501,6 +514,10 @@ def build_agent_graph(
                     "tool_call_count": len(result.tool_calls), "finding_count": len(result.findings),
                     "unknown_count": len(result.unknowns), "rejected_count": len(result.rejected),
                     "hypothesis_status": result.hypothesis.status if result.hypothesis else None,
+                    "hypothesis_claim": result.hypothesis.claim[:4000] if result.hypothesis else None,
+                    "hypothesis_confidence": result.hypothesis.confidence if result.hypothesis else None,
+                    "findings": result.findings[-5:], "unknowns": result.unknowns[-5:],
+                    "rejected": result.rejected[-5:],
                     "last_failure": result.last_failure, "error": result.error,
                 },
             )
