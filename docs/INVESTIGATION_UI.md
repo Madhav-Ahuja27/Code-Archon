@@ -33,6 +33,12 @@ The workspace currently runs LLM-assisted investigations using the configured Gr
 
 This is a local-first prototype: investigation history is held in memory by the UI server and will reset when the server restarts. Repository selection currently uses a local path rather than Git-provider OAuth or remote clone flow. Keep the server bound to `127.0.0.1`; it can launch processes against folders accessible to your account and should not be exposed to an untrusted network.
 
+The generated investigation dashboard now has a dedicated **Not verified** panel. Tasks without a verified finding remain visible with an explicit **NOT VERIFIED** tag; unresolved and rejected items retain their more specific status and also carry **NOT VERIFIED**. Missing verification means unknown, not false.
+
+During a live investigation, the customer progress modal shows the actual recorded event stream and host-service probes for Docker, Neo4j, and Redis. These probes are point-in-time diagnostics: service reachability alone does not prove that the active run uses that service. The event filters show only events emitted by the engine; a missing event is not evidence that a step did not happen.
+
+The staged improvement plan and outstanding verification work are tracked in `docs/UI_IMPROVEMENT_ROADMAP.md`.
+
 The UI does not change AST parsing, retrieval, graph building, agent behavior, evidence verification, or finding promotion.
 
 
