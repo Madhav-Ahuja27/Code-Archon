@@ -142,7 +142,7 @@ def container_logs(name: str, tail: int = 100) -> dict[str, Any]:
             ["docker", "logs", "--tail", str(max(1, min(int(tail), 200))), "--timestamps", name],
             capture_output=True, text=True, timeout=3.0, check=False,
         )
-        output = (proc.stdout or "") + ("\\n" + proc.stderr if proc.stderr else "")
+        output = (proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")
         return {"name": name, "logs": output[-24000:], "error": "" if proc.returncode == 0 else output[-2000:]}
     except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
         return {"name": name, "logs": "", "error": str(exc)[:1000]}
