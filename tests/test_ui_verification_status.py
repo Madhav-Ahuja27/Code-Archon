@@ -35,3 +35,14 @@ def test_generated_dashboard_has_a_dedicated_not_verified_panel() -> None:
     assert 'function renderFindings()' in template
     assert '"not_verified": not_verified' in exporter
     assert 'No evidence supports a verified conclusion yet' in template
+
+
+def test_findings_have_clickable_source_lines_and_explicit_provenance_gaps() -> None:
+    root = Path(__file__).parents[1]
+    template = (root / "archon" / "ui" / "template.html").read_text(encoding="utf-8")
+    assert "function sourceRefFor(f)" in template
+    assert 'data-source="'+"'"+'+esc(ref)' in template
+    assert "function openEvidenceGap(title,reason)" in template
+    assert "No source content has been invented." in template
+    assert "No embedded source-line window is available" in template
+    assert "data-gap-title" in template
