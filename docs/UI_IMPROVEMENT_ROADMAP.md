@@ -38,7 +38,7 @@ This roadmap prioritizes user trust and visibility over decorative polish. Inves
 - [x] Add pause/resume auto-refresh and JSON export for selected-run trace events.
 - [x] Show explicit stale-data/error status when live run refresh fails, while preserving the last event snapshot.
 - [x] Add per-event JSON copy alongside whole-trace JSON export.
-- Separate *service reachable*, *service configured*, and *service observed in this run* states.
+- [x] Explain that host probes are point-in-time reachability/configuration diagnostics, not proof of run-specific service use; preserve the last visible snapshot and flag it as potentially stale when refresh fails. Run-specific use still requires explicit trace evidence.
 - [x] Add keyboard-visible focus states, reduced-motion support, and small-screen layout improvements across the customer, developer, report, and live systems views.
 
 ## Step 5 — End-to-end verification (pending)
