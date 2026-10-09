@@ -122,11 +122,19 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = urlparse(self.path).path
-        if path == "/":
+        if path == "/" or path == "/app":
+            try:
+                page = (_UI_DIR / "product.html").read_text(encoding="utf-8")
+            except OSError:
+                self._send(500, "Customer UI file is missing.", "text/plain; charset=utf-8")
+                return
+            self._send(200, page, "text/html; charset=utf-8")
+            return
+        if path == "/dev":
             try:
                 page = (_UI_DIR / "launcher.html").read_text(encoding="utf-8")
             except OSError:
-                self._send(500, "Launcher UI file is missing.", "text/plain; charset=utf-8")
+                self._send(500, "Developer launcher UI file is missing.", "text/plain; charset=utf-8")
                 return
             self._send(200, page, "text/html; charset=utf-8")
             return
