@@ -171,6 +171,7 @@ $("#recoveryDetails").innerHTML='<div class="grid grid3"><div><div class="cardta
 const toolNames=[...new Set(evidence.map(e=>e.tool||"unknown"))].sort();
 $("#evidenceTool").innerHTML='<option value="">All channels</option>'+toolNames.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join("");
 function evidenceRelation(e){if(typeof e.supports==="boolean")return e.supports?"Supports":"Contradicts";const relation=String(e.relation||e.stance||e.polarity||"").toLowerCase();if(["supports","support","positive"].includes(relation))return "Supports";if(["contradicts","contradiction","negative","refutes"].includes(relation))return "Contradicts";if(["insufficient","insufficient_metadata","unknown","unclassified"].includes(relation))return "Insufficient metadata";return "Insufficient metadata";}
+function evidenceRelationClass(e){const relation=evidenceRelation(e);return relation==="Supports"?"green":relation==="Contradicts"?"red":"amber";}
 function renderEvidence(){
  const q=($("#evidenceSearch").value||"").toLowerCase(),tool=$("#evidenceTool").value;
  const items=evidence.filter(e=>(!tool||(e.tool||"unknown")===tool)&&(!q||[e.source,e.content,e.tool].join(" ").toLowerCase().includes(q)));
