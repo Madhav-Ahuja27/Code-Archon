@@ -26,6 +26,12 @@ This roadmap prioritizes user trust and visibility over decorative polish. Inves
 - [x] Make evidence references clickable and missing provenance visually distinct.
 - [ ] Add explicit per-evidence support/contradiction/insufficient labels from structured evidence metadata; do not infer them from text.
 
+## Frontend usability pass — navigation and keyboard access (implemented; runtime verification pending)
+
+- Keep primary navigation visible and horizontally scrollable on narrow screens instead of hiding it entirely.
+- Make the progress dialog keyboard-operable with Escape-to-close, focus containment, focus restoration, and background scroll locking.
+- Respect reduced-motion preferences.
+
 ## Step 4 — Make the systems view easier to operate (planned)
 
 - Group events by investigation stage and collapse repetitive low-level events by default.
