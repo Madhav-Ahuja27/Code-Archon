@@ -80,3 +80,16 @@ def test_frontend_pages_include_responsive_accessibility_and_trace_controls() ->
     assert "data may be stale" in live
     assert "lastSuccessAt" in live
     assert ":focus-visible" in live and "prefers-reduced-motion:reduce" in live
+
+
+def test_live_trace_can_group_events_and_copy_individual_event_payloads() -> None:
+    page = (Path(__file__).parents[1] / "archon" / "observability" / "dashboard.html").read_text(encoding="utf-8")
+    for marker in (
+        'id="toggle-grouping"',
+        "let groupEventsByStage=true",
+        'class="eventgroup"',
+        "Unstaged events",
+        "Copy event JSON",
+        "navigator.clipboard.writeText(JSON.stringify(item,null,2))",
+    ):
+        assert marker in page
