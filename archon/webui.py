@@ -82,7 +82,7 @@ def _read_process(run_id: str, process: subprocess.Popen[str]) -> None:
 
 def _public_run(run: dict, include_logs: bool = True) -> dict:
     with _LOCK:
-        result = {k: v for k, v in run.items() if k not in {"process", "logs", "output_path", "command"}}
+        result = {k: v for k, v in run.items() if k not in {"process", "logs", "output_path", "event_path", "command"}}
         result["output_path"] = str(run["output_path"])
         result["logs"] = run["logs"][-500:] if include_logs else []
         if run.get("started_epoch"):
