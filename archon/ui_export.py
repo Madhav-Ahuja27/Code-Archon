@@ -173,7 +173,7 @@ def build_ui(store, parse_result, final, repo, goal, session, mode, out_path) ->
 
     # Embed focused source windows for the code explorer as well as findings.
     # This keeps the generated dashboard useful offline without copying entire repositories.
-    for ref in [m.id + ":1" for m in module_data] + [
+    for ref in [m["id"] + ":1" for m in module_data] + [
         item["module"] + ":" + str(item["start_line"])
         for item in function_data + class_data if item.get("start_line")
     ]:
@@ -185,7 +185,7 @@ def build_ui(store, parse_result, final, repo, goal, session, mode, out_path) ->
         relation_counts[edge.rel_type] = relation_counts.get(edge.rel_type, 0) + 1
     graph_nodes = [{
         "id": n.id, "label": n.label, "confidence": float(n.confidence),
-        "provenance": n.provenance, "properties": n.properties,
+        "provenance": n.provenance, "properties": n.properties, "cited": n.id in cited,
     } for n in nodes]
     graph_edges = [{"source": e.source_id, "target": e.target_id, "type": e.rel_type,
                     "properties": e.properties} for e in edges]
@@ -287,3 +287,5 @@ def build_ui(store, parse_result, final, repo, goal, session, mode, out_path) ->
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html, encoding="utf-8")
     return out
+
+
