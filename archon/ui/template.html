@@ -1,71 +1,157 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
+<html lang="en">
+<head>
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Code-Archon</title>
+<title>Code-Archon · Investigation</title>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#667085;--bd:#e3e6ec;--ac:#4f46e5;--ok:#12805c;--warn:#b25e09;--bad:#c0392b;--code:#0f172a;--codetx:#e2e8f0;--hl:#4f46e540;padding-top:env(safe-area-inset-top,0)}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1116;--card:#171b22;--tx:#e8ebf0;--mut:#8b94a3;--bd:#262c36;--ac:#818cf8;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}}
-:root[data-theme=dark]{--bg:#0e1116;--card:#171b22;--tx:#e8ebf0;--mut:#8b94a3;--bd:#262c36;--ac:#818cf8;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
-header{padding:18px 20px;border-bottom:1px solid var(--bd);background:var(--card)}
-h1{margin:0;font-size:19px}h1 span{color:var(--ac)}.sub{color:var(--mut);font-size:13px;margin-top:4px}
-.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;border:1px solid var(--bd);color:var(--mut);margin-right:6px}
-.chip.llm{color:var(--ok);border-color:var(--ok)}.chip.heur{color:var(--warn);border-color:var(--warn)}
-nav{display:flex;gap:4px;padding:10px 16px 0;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--bd)}
-nav button{background:none;border:0;border-bottom:2px solid transparent;padding:9px 14px;color:var(--mut);font:inherit;cursor:pointer;white-space:nowrap}
-nav button.on{color:var(--ac);border-color:var(--ac);font-weight:600}
-main{max-width:1100px;margin:0 auto;padding:18px 16px 60px}section{display:none}section.on{display:block}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
-.stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}.stat b{font-size:24px;display:block}.stat span{color:var(--mut);font-size:12px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-top:14px}
-.task{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}.claim{margin:6px 0 10px;font-size:15.5px}
-.bar{height:6px;background:var(--bd);border-radius:9px;overflow:hidden;width:140px;display:inline-block;vertical-align:middle}.bar i{display:block;height:100%;background:var(--ok)}
-.refs button{margin:4px 6px 0 0;padding:3px 9px;border:1px solid var(--bd);background:var(--bg);color:var(--ac);border-radius:7px;font:12px ui-monospace,Consolas,monospace;cursor:pointer}
-.refs button:hover{border-color:var(--ac)}details{margin-top:10px;color:var(--mut);font-size:13px}details div{margin:4px 0;font-family:ui-monospace,Consolas,monospace;font-size:12px;overflow-wrap:anywhere}
-#cy{height:560px;background:var(--card);border:1px solid var(--bd);border-radius:12px}.note{color:var(--mut);font-size:13px;margin:8px 2px}
-.leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 12px;vertical-align:middle}
-#drawer{position:fixed;top:0;right:0;bottom:0;width:min(680px,100%);background:var(--card);border-left:1px solid var(--bd);transform:translateX(105%);transition:.2s;z-index:9;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0)}
-#drawer.on{transform:none}#dh{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;gap:10px;font:13px ui-monospace,Consolas,monospace;overflow-wrap:anywhere}
-#dh button{background:none;border:0;color:var(--tx);font-size:20px;cursor:pointer}
-#code{margin:0;padding:12px 0;overflow:auto;background:var(--code);color:var(--codetx);flex:1;font:12.5px/1.6 ui-monospace,Consolas,monospace}
-#code div{padding:0 14px;white-space:pre}#code div.h{background:var(--hl);border-left:3px solid var(--ac);padding-left:11px;color:#fff}#code span{color:#64748b;display:inline-block;width:44px;user-select:none}
-.empty{color:var(--mut);padding:24px;text-align:center}
-</style></head><body>
-<header><h1><span>Code-Archon</span> · <em id="repo"></em></h1><div class="sub" id="goal"></div><div class="sub" id="meta" style="margin-top:8px"></div></header>
-<nav id="nav"><button data-t="ov" class="on">Overview</button><button data-t="fi">Findings</button><button data-t="gr">Architecture graph</button><button data-t="un">Unresolved</button></nav>
-<main>
-<section id="ov" class="on"><div class="grid" id="stats"></div><div class="card"><b>How to read this</b><p class="note">Every finding cites <code>file:line</code> locations that the model was actually shown. Claims citing anything else are blocked by the provenance gate. Click any citation to see the real source code.</p></div></section>
-<section id="fi"></section>
-<section id="gr"><div class="note">Module import graph. Node size = lines of code. <span class="leg"><i style="background:#4f46e5"></i>cited by a finding<i style="background:#94a3b8"></i>other module</span></div><div id="cy"></div></section>
-<section id="un"></section>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#111a2d;--panel2:#151f35;--line:#26334c;--text:#e8eefb;--muted:#93a3bd;--soft:#bac7dc;--accent:#8b9cff;--accent2:#64e2c2;--warn:#f4c477;--danger:#ff929b;--shadow:0 16px 40px #02061755}
+:root[data-theme="light"]{color-scheme:light;--bg:#f4f7fb;--panel:#fff;--panel2:#f7f9fd;--line:#dfe6f0;--text:#17233a;--muted:#65748b;--soft:#42516a;--accent:#514ce4;--accent2:#0d9477;--warn:#9b620b;--danger:#c33d52;--shadow:0 12px 32px #243b5314}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 10% 0%,#28386a35,transparent 38%),var(--bg);color:var(--text);font:14px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.topbar{padding:24px clamp(16px,4vw,48px) 20px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--panel) 84%,transparent);backdrop-filter:blur(14px)}
+.toprow{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;max-width:1600px;margin:auto}.brandline{display:flex;align-items:center;gap:12px}.mark{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,var(--accent),#65d9c4);display:grid;place-items:center;color:#0b1020;font-weight:900;font-size:18px;box-shadow:0 6px 20px #6976f533}
+h1{font-size:clamp(20px,2vw,27px);letter-spacing:-.04em;margin:0;font-weight:760}.eyebrow{color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin-bottom:3px}.goal{margin:12px 0 0;color:var(--soft);font-size:14px;max-width:920px}.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.pill{border:1px solid var(--line);border-radius:999px;padding:4px 10px;color:var(--muted);font-size:11px;display:inline-flex;align-items:center;gap:6px}.pill:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--muted)}.pill.llm:before{background:var(--accent2)}.pill.heur:before{background:var(--warn)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.btn{border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);padding:8px 11px;font-size:12px;transition:border-color .15s,transform .15s}.btn:hover{border-color:var(--accent);transform:translateY(-1px)}.btn.primary{background:var(--accent);border-color:var(--accent);color:#0a1020;font-weight:750}
+.shell{max-width:1600px;margin:auto;padding:22px clamp(12px,3vw,40px) 48px}.stats{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px}.stat{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px 15px 13px;min-width:0;box-shadow:0 4px 18px #0206170b}.stat:after{content:"";position:absolute;right:-18px;top:-26px;width:62px;height:62px;border-radius:50%;background:var(--accent);opacity:.07}.stat b{display:block;font-size:clamp(20px,2vw,28px);letter-spacing:-.04em;line-height:1.2;font-variant-numeric:tabular-nums}.stat span{display:block;color:var(--muted);font-size:11px;margin-top:8px}
+.tabs{display:flex;gap:5px;border-bottom:1px solid var(--line);margin:24px 0 18px;overflow:auto}.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:11px 15px;white-space:nowrap}.tabs button.on{color:var(--text);border-color:var(--accent);font-weight:700}.view{display:none}.view.on{display:block}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}.panelhead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid var(--line)}.panelhead h2{font-size:15px;margin:0;letter-spacing:-.02em}.panelhead p{font-size:12px;color:var(--muted);margin:5px 0 0}.section-label{color:var(--accent);font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:5px}
+.overviewgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,.8fr);gap:14px;margin-top:14px}.bodypad{padding:18px 20px}.howlist{display:grid;gap:13px}.howitem{display:flex;gap:11px;align-items:flex-start}.step{flex:0 0 27px;height:27px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;color:var(--accent);font-size:11px;font-weight:800}.howitem b{display:block;font-size:12px}.howitem span{display:block;color:var(--muted);font-size:12px;margin-top:2px}.metricline{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px}.metricline:last-child{border-bottom:0}.metricline span{color:var(--muted)}.metricline b{font-variant-numeric:tabular-nums}
+.finding{padding:17px 20px;border-bottom:1px solid var(--line)}.finding:last-child{border-bottom:0}.task{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800}.claim{font-size:14px;margin:8px 0 11px;overflow-wrap:anywhere}.confidence{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px}.bar{height:5px;width:120px;background:var(--line);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}.refs{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.refs button{max-width:100%;overflow-wrap:anywhere;text-align:left;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--accent);font:11px ui-monospace,SFMono-Regular,Consolas,monospace}.refs button:hover{border-color:var(--accent)}details{margin-top:12px;color:var(--muted);font-size:12px}details summary{cursor:pointer}details .evidence{padding:7px 0;overflow-wrap:anywhere;font:11px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+.graphlayout{display:grid;grid-template-columns:minmax(0,1fr) 290px;min-height:650px}.graphmain{min-width:0;border-right:1px solid var(--line)}.graphbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--panel2)}.searchbox{min-width:160px;flex:1;max-width:300px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);padding:8px 10px;font-size:12px}.select{border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);padding:8px 9px;font-size:12px;max-width:100%}.graphcanvas{height:570px;min-height:400px;background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:19px 19px;position:relative}.graphcanvas:empty:after{content:"The graph will appear when this tab opens.";position:absolute;inset:0;display:grid;place-items:center;color:var(--muted)}#cy{width:100%;height:100%}.graphfoot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 15px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}.legend{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.legend span{display:inline-flex;align-items:center;gap:6px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%}.inspector{padding:17px 16px;min-width:0}.inspector h3{font-size:13px;margin:0 0 6px;overflow-wrap:anywhere}.inspector .muted{font-size:11px;color:var(--muted)}.inspect-empty{display:flex;min-height:210px;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:12px;padding:15px}.inspect-statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:15px 0}.inspectstat{padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2)}.inspectstat b{display:block;font-size:18px}.inspectstat span{font-size:10px;color:var(--muted)}.depgroup{margin-top:16px}.depgroup h4{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin:0 0 7px}.depitem{display:block;width:100%;text-align:left;overflow-wrap:anywhere;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;color:var(--soft);font-size:11px;margin-top:5px}.depitem:hover{border-color:var(--accent);color:var(--text)}.depitem.active{border-color:var(--accent);color:var(--accent)}.graph-tip{font-size:11px;color:var(--muted);margin:0}
+.empty{padding:36px 18px;text-align:center;color:var(--muted);font-size:13px}.unknown{padding:15px 20px;border-bottom:1px solid var(--line)}.unknown:last-child{border-bottom:0}.unknown .claim{margin-bottom:0}.drawer{position:fixed;inset:0 0 0 auto;width:min(700px,100%);background:var(--panel);border-left:1px solid var(--line);transform:translateX(102%);transition:transform .2s ease;z-index:10;display:flex;flex-direction:column;box-shadow:var(--shadow)}.drawer.on{transform:translateX(0)}.drawerhead{padding:14px 17px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line)}.drawerhead b{font:12px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}.code{margin:0;flex:1;overflow:auto;padding:12px 0;background:#0b1220;color:#dbe7f8;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace}.code div{white-space:pre;padding:0 15px}.code div.h{background:#5547aa55;border-left:3px solid #9c93ff;padding-left:12px}.code span{display:inline-block;width:45px;color:#64748b;user-select:none}.backdrop{display:none;position:fixed;inset:0;background:#02061766;z-index:9}.backdrop.on{display:block}.footnote{font-size:11px;color:var(--muted);margin:13px 2px}
+@media(max-width:1150px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.graphlayout{grid-template-columns:minmax(0,1fr) 260px}.toprow{flex-direction:column}.actions{justify-content:flex-start}}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.overviewgrid{grid-template-columns:1fr}.graphlayout{grid-template-columns:1fr}.graphmain{border-right:0;border-bottom:1px solid var(--line)}.graphcanvas{height:470px;min-height:360px}.inspector{min-height:180px}.panelhead{padding:15px}.bodypad{padding:15px}.finding{padding:15px}.shell{padding-top:14px}.topbar{padding-top:18px}.actions{width:100%}.btn{flex:0 0 auto}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="topbar">
+ <div class="toprow">
+  <div>
+   <div class="brandline"><div class="mark">A</div><div><div class="eyebrow">Code intelligence · Investigation report</div><h1>Code-Archon <span style="color:var(--muted);font-weight:500">/ <em id="repo"></em></span></h1></div></div>
+   <p class="goal" id="goal"></p><div class="meta" id="meta"></div>
+  </div>
+  <div class="actions"><button class="btn" id="themeBtn">Switch to light</button><button class="btn" id="fitTop">Fit graph to view</button><button class="btn primary" id="exportBtn">Export graph PNG</button></div>
+ </div>
+</header>
+<main class="shell">
+ <div class="stats" id="stats"></div>
+ <nav class="tabs" id="nav" aria-label="Report sections"><button data-t="ov" class="on">Overview</button><button data-t="fi">Findings</button><button data-t="gr">Dependency graph</button><button data-t="un">Unresolved</button></nav>
+ <section class="view on" id="ov">
+  <div class="overviewgrid">
+   <div class="panel"><div class="panelhead"><div><div class="section-label">Investigation summary</div><h2>Evidence-led codebase exploration</h2><p>Verified findings and source references from this run.</p></div></div><div class="bodypad"><div class="howlist">
+    <div class="howitem"><div class="step">01</div><div><b>Read the graph</b><span>Open Dependency graph to explore module imports. Select a node to see its direct dependencies and dependents.</span></div></div>
+    <div class="howitem"><div class="step">02</div><div><b>Inspect evidence</b><span>Findings include confidence and source citations. Click a citation to open the relevant code with its referenced line highlighted.</span></div></div>
+    <div class="howitem"><div class="step">03</div><div><b>Keep uncertainty visible</b><span>Unresolved items remain separate from verified findings; a missing answer is not silently treated as a fact.</span></div></div>
+   </div></div></div>
+   <div class="panel"><div class="panelhead"><div><div class="section-label">Run details</div><h2>Investigation metadata</h2></div></div><div class="bodypad" id="runDetails"></div></div>
+  </div>
+ </section>
+ <section class="view" id="fi"><div class="panel"><div class="panelhead"><div><div class="section-label">Evidence</div><h2>Verified findings</h2><p>Claims are shown with the confidence and source material recorded by the investigation.</p></div></div><div id="findings"></div></div></section>
+ <section class="view" id="gr">
+  <div class="panel">
+   <div class="panelhead"><div><div class="section-label">Explore relationships</div><h2>Module dependency map</h2><p>Each connection represents an import relationship recorded by the parser. Select a module to inspect its neighbors.</p></div><p class="graph-tip" id="graphSummary"></p></div>
+   <div class="graphlayout">
+    <div class="graphmain">
+     <div class="graphbar"><input class="searchbox" id="nodeSearch" type="search" placeholder="Find a module…" aria-label="Search modules"><select class="select" id="layoutSelect" aria-label="Graph layout"><option value="cose">Force-directed</option><option value="breadthfirst">Hierarchy</option><option value="concentric">Concentric</option><option value="circle">Circle</option><option value="grid">Grid</option></select><button class="btn" id="fitBtn">Fit</button><button class="btn" id="resetBtn">Reset</button></div>
+     <div class="graphcanvas"><div id="cy"></div></div>
+     <div class="graphfoot"><div class="legend"><span><i class="dot" style="background:#8b9cff"></i>Referenced by finding</span><span><i class="dot" style="background:#6e819e"></i>Other module</span><span><i class="dot" style="background:#64e2c2"></i>Selected / connected</span></div><span id="graphCount"></span></div>
+    </div>
+    <aside class="inspector" id="inspector"><div class="section-label">Module inspector</div><h3>No module selected</h3><div class="inspect-empty">Click any node to see its imports, incoming dependencies, and source metrics.</div></aside>
+   </div>
+  </div>
+  <p class="footnote">Tip: scroll to zoom, drag to pan, and select a node to highlight its immediate connections. Use search to find a module by path.</p>
+ </section>
+ <section class="view" id="un"><div class="panel"><div class="panelhead"><div><div class="section-label">Open questions</div><h2>Unresolved items</h2><p>Items that could not be established confidently from the available repository evidence.</p></div></div><div id="unknowns"></div></div></section>
 </main>
-<div id="drawer"><div id="dh"><span id="dt"></span><button onclick="drawer.classList.remove('on')" aria-label="Close">×</button></div><pre id="code"></pre></div>
+<div class="backdrop" id="backdrop"></div>
+<aside class="drawer" id="drawer" aria-label="Source code viewer"><div class="drawerhead"><b id="drawerTitle">Source</b><button class="btn" id="closeDrawer">Close ×</button></div><pre class="code" id="code"></pre></aside>
 <script>/*__CYTOSCAPE__*/</script>
 <script>
-const D=/*__DATA__*/null,$=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const drawer=$('#drawer');let cy=null;
-if(!D){document.body.innerHTML='<p class="empty">No data embedded.</p>'}else{
-$('#repo').textContent=D.meta.repo;$('#goal').textContent='Goal: '+D.meta.goal;
-const llm=D.meta.mode==='llm';
-$('#meta').innerHTML=`<span class="chip ${llm?'llm':'heur'}">${llm?'LLM-written claims':'Heuristic mode (no LLM) — claims are the task text, evidence is real'}</span><span class="chip">session ${esc(D.meta.session)}</span><span class="chip">${esc(D.meta.generated)}</span>`;
-const S=D.stats,cards=[['modules','Modules'],['functions','Functions'],['classes','Classes'],['calls','Call edges'],['imports','Import edges'],['findings','Verified findings'],['blocked','Blocked by gate'],['unresolved','Unresolved']];
-$('#stats').innerHTML=cards.map(([k,l])=>`<div class="stat"><b>${S[k]}</b><span>${l}</span></div>`).join('');
-$('#fi').innerHTML=D.findings.length?D.findings.map((f,i)=>{const refs=[f.provenance,...f.evidence.map(e=>e.source)].filter((x,j,a)=>x&&a.indexOf(x)===j&&D.sources[x]).slice(0,8);
-return `<div class="card"><div class="task">Task ${i+1} · ${esc(f.task)}</div><div class="claim">${esc(f.claim)}</div>
-<div>confidence <span class="bar"><i style="width:${Math.round(f.confidence*100)}%"></i></span> ${f.confidence.toFixed(2)}</div>
-<div class="refs">${refs.map(r=>`<button data-r="${esc(r)}">${esc(r)}</button>`).join('')}</div>
-<details><summary>${f.evidence.length} evidence items</summary>${f.evidence.map(e=>`<div>[${esc(e.tool)}] ${esc(e.source)} — ${esc(e.content)}</div>`).join('')}</details></div>`}).join(''):'<p class="empty">No verified findings.</p>';
-$('#un').innerHTML=D.unknowns.length?D.unknowns.map(u=>`<div class="card"><div class="task">Could not be verified from this repository's code</div><div class="claim">${esc(u)}</div></div>`).join('')+`<p class="note">${S.blocked} claim(s) were blocked by the provenance gate. Unresolved is an honest result: the evidence may live in an external dependency.</p>`:'<p class="empty">All tasks verified.</p>';
-document.addEventListener('click',e=>{const r=e.target.dataset&&e.target.dataset.r;if(!r)return;const s=D.sources[r];if(!s)return;
-$('#dt').textContent=s.path+':'+s.hl;$('#code').innerHTML=s.lines.map((l,i)=>`<div class="${s.start+i===s.hl?'h':''}"><span>${s.start+i}</span>${esc(l)}</div>`).join('');drawer.classList.add('on')});
-$('#nav').addEventListener('click',e=>{const t=e.target.dataset.t;if(!t)return;document.querySelectorAll('nav button,section').forEach(x=>x.classList.remove('on'));e.target.classList.add('on');$('#'+t).classList.add('on');if(t==='gr')drawGraph()});
-function drawGraph(){if(cy||!window.cytoscape){if(!window.cytoscape)$('#cy').innerHTML='<p class="empty">Graph library not bundled.</p>';return}
-const mx=Math.max(...D.graph.nodes.map(n=>n.lines),1);
-cy=cytoscape({container:$('#cy'),elements:[...D.graph.nodes.map(n=>({data:{id:n.id,label:n.id.split('/').pop(),sz:14+30*Math.sqrt(n.lines/mx),cited:n.cited?1:0,lines:n.lines,fns:n.fns}})),...D.graph.edges.map(([s,t],i)=>({data:{id:'e'+i,source:s,target:t}}))],
-style:[{selector:'node',style:{label:'data(label)','font-size':9,color:'#8b94a3',width:'data(sz)',height:'data(sz)','background-color':'#94a3b8','text-valign':'bottom','text-margin-y':3}},
-{selector:'node[cited=1]',style:{'background-color':'#4f46e5','border-width':2,'border-color':'#a5b4fc'}},{selector:'edge',style:{width:1,'line-color':'#cbd5e1','target-arrow-shape':'triangle','target-arrow-color':'#cbd5e1','curve-style':'bezier',opacity:.6}},
-{selector:'.dim',style:{opacity:.1}}],layout:{name:'cose',animate:false,nodeRepulsion:9000,idealEdgeLength:70}});
-cy.on('tap','node',e=>{const n=e.target,nb=n.closedNeighborhood();cy.elements().addClass('dim');nb.removeClass('dim');$('#cy').title=`${n.id()} · ${n.data('lines')} lines · ${n.data('fns')} functions`});
-cy.on('tap',e=>{if(e.target===cy)cy.elements().removeClass('dim')});cy.on('mouseover','node',e=>{$('#cy').title=`${e.target.id()} · ${e.target.data('lines')} lines · ${e.target.data('fns')} functions`})}
+(function(){
+"use strict";
+const D=/*__DATA__*/null;
+const $=function(s){return document.querySelector(s)};
+const esc=function(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
+const drawer=$("#drawer"),backdrop=$("#backdrop");
+let cy=null,selectedId=null;
+function setTheme(theme){document.documentElement.dataset.theme=theme;$("#themeBtn").textContent=theme==="dark"?"Switch to light":"Switch to dark"}
+if(!D){document.body.innerHTML='<p class="empty">No investigation data was embedded in this report.</p>';return}
+$("#repo").textContent=D.meta.repo;
+$("#goal").textContent=D.meta.goal?"Goal: "+D.meta.goal:"Repository investigation";
+const isLlm=D.meta.mode==="llm";
+$("#meta").innerHTML='<span class="pill '+(isLlm?"llm":"heur")+'">'+(isLlm?"LLM-assisted investigation":"Heuristic mode")+'</span><span class="pill">Session '+esc(D.meta.session)+'</span><span class="pill">Generated '+esc(D.meta.generated)+'</span>';
+const S=D.stats;
+const statDefs=[["modules","Modules"],["functions","Functions"],["classes","Classes"],["calls","Call edges"],["imports","Import edges"],["findings","Verified findings"],["blocked","Blocked claims"],["unresolved","Unresolved"]];
+$("#stats").innerHTML=statDefs.map(function(x){return '<div class="stat"><b>'+Number(S[x[0]]||0).toLocaleString()+'</b><span>'+x[1]+'</span></div>'}).join("");
+const detailDefs=[["Repository",D.meta.repo],["Execution mode",isLlm?"LLM-assisted":"Heuristic"],["Session ID",D.meta.session],["Generated at",D.meta.generated],["Source modules",S.modules],["Verified findings",S.findings],["Unresolved items",S.unresolved]];
+$("#runDetails").innerHTML=detailDefs.map(function(x){return '<div class="metricline"><span>'+esc(x[0])+'</span><b>'+esc(x[1])+'</b></div>'}).join("");
+$("#findings").innerHTML=D.findings.length?D.findings.map(function(f,i){
+ const refs=[f.provenance].concat(f.evidence.map(function(e){return e.source})).filter(function(x,j,a){return x&&a.indexOf(x)===j&&D.sources[x]}).slice(0,10);
+ return '<article class="finding"><div class="task">Finding '+(i+1)+(f.task?" · "+esc(f.task):"")+'</div><div class="claim">'+esc(f.claim)+'</div><div class="confidence"><span>Confidence</span><span class="bar"><i style="width:'+Math.max(0,Math.min(100,Math.round(f.confidence*100)))+'%"></i></span><b>'+Number(f.confidence).toFixed(2)+'</b></div><div class="refs">'+refs.map(function(r){return '<button data-r="'+esc(r)+'">'+esc(r)+'</button>'}).join("")+'</div>'+(f.evidence.length?'<details><summary>'+f.evidence.length+' evidence item(s)</summary>'+f.evidence.map(function(e){return '<div class="evidence">['+esc(e.tool)+'] '+esc(e.source)+' — '+esc(e.content)+'</div>'}).join("")+'</details>':"")+'</article>'
+}).join(""):'<div class="empty">No verified findings were recorded for this run.</div>';
+$("#unknowns").innerHTML=D.unknowns.length?D.unknowns.map(function(u){return '<article class="unknown"><div class="task">Unresolved</div><div class="claim">'+esc(u)+'</div></article>'}).join(""):'<div class="empty">No unresolved items were recorded.</div>';
+function openSource(ref){const s=D.sources[ref];if(!s)return;$("#drawerTitle").textContent=s.path+":"+s.hl;$("#code").innerHTML=s.lines.map(function(line,i){return '<div class="'+(s.start+i===s.hl?"h":"")+'"><span>'+String(s.start+i).padStart(4," ")+'</span>'+esc(line)+'</div>'}).join("");drawer.classList.add("on");backdrop.classList.add("on")}
+function closeSource(){drawer.classList.remove("on");backdrop.classList.remove("on")}
+document.addEventListener("click",function(e){const ref=e.target&&e.target.dataset&&e.target.dataset.r;if(ref)openSource(ref)});
+$("#closeDrawer").addEventListener("click",closeSource);backdrop.addEventListener("click",closeSource);
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeSource()});
+$("#themeBtn").addEventListener("click",function(){setTheme(document.documentElement.dataset.theme==="light"?"dark":"light")});
+$("#nav").addEventListener("click",function(e){const t=e.target&&e.target.dataset&&e.target.dataset.t;if(!t)return;document.querySelectorAll(".tabs button,.view").forEach(function(x){x.classList.remove("on")});e.target.classList.add("on");$("#"+t).classList.add("on");if(t==="gr")drawGraph()});
+function drawGraph(){
+ if(cy){cy.resize();cy.fit(undefined,45);return}
+ const container=$("#cy");
+ if(!window.cytoscape){container.innerHTML='<div class="empty">The graph library is unavailable in this file.</div>';return}
+ const nodes=D.graph.nodes||[],edges=D.graph.edges||[];
+ if(!nodes.length){container.innerHTML='<div class="empty">No source modules are available to display.</div>';$("#graphCount").textContent="0 modules";return}
+ const nodeIds=new Set(nodes.map(function(n){return n.id}));
+ const incoming={},outgoing={};
+ nodes.forEach(function(n){incoming[n.id]=[];outgoing[n.id]=[]});
+ edges.forEach(function(e){if(nodeIds.has(e[0])&&nodeIds.has(e[1])){outgoing[e[0]].push(e[1]);incoming[e[1]].push(e[0])}});
+ const maxLines=Math.max.apply(null,nodes.map(function(n){return Number(n.lines)||0}).concat([1]));
+ const elements=nodes.map(function(n){return {data:{id:n.id,label:n.id.split("/").pop()||n.id,size:17+22*Math.sqrt((Number(n.lines)||0)/maxLines),cited:n.cited?1:0,lines:Number(n.lines)||0,fns:Number(n.fns)||0,imports:outgoing[n.id].length,importedBy:incoming[n.id].length}}}).concat(edges.map(function(e,i){return {data:{id:"edge-"+i,source:e[0],target:e[1]}}}));
+ cy=window.cytoscape({container:container,elements:elements,minZoom:.12,maxZoom:3,wheelSensitivity:.18,
+  style:[
+   {selector:"node",style:{"label":"data(label)","font-size":10,"font-family":"Inter, system-ui, sans-serif","font-weight":500,"color":"#cbd5e1","text-outline-width":2,"text-outline-color":"#101827","text-valign":"bottom","text-margin-y":6,"text-wrap":"ellipsis","text-max-width":115,"width":"data(size)","height":"data(size)","background-color":"#6e819e","border-width":1,"border-color":"#9aabc2","overlay-opacity":0,"transition-property":"background-color,border-color,opacity","transition-duration":160}},
+   {selector:"node[cited = 1]",style:{"background-color":"#8b9cff","border-color":"#c3caff","border-width":2}},
+   {selector:"edge",style:{"width":1.4,"line-color":"#62748f","target-arrow-color":"#8b9cff","target-arrow-shape":"triangle","arrow-scale":.8,"curve-style":"bezier","opacity":.58}},
+   {selector:"node:selected",style:{"background-color":"#64e2c2","border-color":"#d0fff3","border-width":3,"color":"#fff","z-index":999}},
+   {selector:".neighbor",style:{"background-color":"#64e2c2","line-color":"#64e2c2","target-arrow-color":"#64e2c2","border-color":"#b5fff0","opacity":1}},
+   {selector:".faded",style:{"opacity":.13}},
+   {selector:".search-hit",style:{"border-color":"#f4c477","border-width":4,"opacity":1}}
+  ],
+  layout:{name:"cose",animate:false,fit:true,padding:45,nodeRepulsion:8500,idealEdgeLength:95,edgeElasticity:100,gravity:.25,gravityRange:3,numIter:900,componentSpacing:70,randomize:false}});
+ cy.on("tap","node",function(e){selectNode(e.target.id())});
+ cy.on("tap",function(e){if(e.target===cy){selectedId=null;cy.elements().removeClass("faded neighbor");cy.nodes().unselect();renderInspector(null)}});
+ cy.on("mouseover","node",function(e){container.style.cursor="pointer";const n=e.target;container.title=n.id()+" · "+n.data("lines")+" lines · "+n.data("imports")+" imports"});
+ cy.on("mouseout","node",function(){container.style.cursor="default"});
+ $("#graphCount").textContent=nodes.length+" modules · "+edges.length+" import relationships";
+ $("#graphSummary").textContent=nodes.length+" modules · "+edges.length+" relationships";
+ renderInspector(null);
 }
-</script></body></html>
+function selectNode(id){
+ if(!cy)return;selectedId=id;const n=cy.getElementById(id);cy.elements().removeClass("faded neighbor");cy.nodes().unselect();n.select();
+ const neighborhood=n.closedNeighborhood();cy.elements().not(neighborhood).addClass("faded");neighborhood.removeClass("faded").addClass("neighbor");
+ renderInspector(id);
+}
+function renderInspector(id){
+ const panel=$("#inspector");
+ if(!id){panel.innerHTML='<div class="section-label">Module inspector</div><h3>No module selected</h3><div class="inspect-empty">Click any node to see its imports, incoming dependencies, and source metrics.</div>';return}
+ const n=cy.getElementById(id),d=n.data(),imports=cy.getElementById(id).outgoers("edge").targets().map(function(x){return x.id()}).sort(),dependents=cy.getElementById(id).incomers("edge").sources().map(function(x){return x.id()}).sort();
+ function depList(title,items){return '<div class="depgroup"><h4>'+title+' · '+items.length+'</h4>'+(items.length?items.map(function(x){return '<button class="depitem '+(x===selectedId?"active":"")+'" data-node="'+esc(x)+'">'+esc(x)+'</button>'}).join(""):'<div class="muted">None recorded</div>')+'</div>'}
+ panel.innerHTML='<div class="section-label">Module inspector</div><h3>'+esc(id)+'</h3><div class="muted">Click a relationship below to move focus to that module.</div><div class="inspect-statgrid"><div class="inspectstat"><b>'+d.lines.toLocaleString()+'</b><span>Lines of code</span></div><div class="inspectstat"><b>'+d.fns.toLocaleString()+'</b><span>Functions</span></div><div class="inspectstat"><b>'+imports.length+'</b><span>Imports</span></div><div class="inspectstat"><b>'+dependents.length+'</b><span>Imported by</span></div></div>'+depList("Imports",imports)+depList("Imported by",dependents);
+ panel.querySelectorAll("[data-node]").forEach(function(btn){btn.addEventListener("click",function(){const target=btn.dataset.node;selectNode(target);cy.animate({center:{eles:cy.getElementById(target)},duration:180})})});
+}
+$("#layoutSelect").addEventListener("change",function(){if(!cy)return;const name=this.value;cy.layout({name:name,animate:false,fit:true,padding:45,spacingFactor:name==="breadthfirst"?1.25:1,avoidOverlap:true}).run()});
+$("#fitBtn").addEventListener("click",function(){if(cy)cy.fit(undefined,45)});
+$("#fitTop").addEventListener("click",function(){document.querySelector('[data-t="gr"]').click();setTimeout(function(){if(cy)cy.fit(undefined,45)},50)});
+$("#resetBtn").addEventListener("click",function(){if(!cy)return;$("#nodeSearch").value="";cy.elements().removeClass("faded neighbor search-hit");selectedId=null;cy.nodes().unselect();renderInspector(null);cy.layout({name:$("#layoutSelect").value,animate:false,fit:true,padding:45,nodeRepulsion:8500,idealEdgeLength:95,avoidOverlap:true}).run()});
+$("#nodeSearch").addEventListener("input",function(){if(!cy)return;const q=this.value.trim().toLowerCase();cy.nodes().removeClass("search-hit");if(!q)return;const hits=cy.nodes().filter(function(n){return n.id().toLowerCase().includes(q)||n.data("label").toLowerCase().includes(q)});hits.addClass("search-hit");if(hits.length===1)cy.animate({center:{eles:hits},zoom:Math.max(cy.zoom(),.85),duration:180})});
+$("#exportBtn").addEventListener("click",function(){if(!cy){document.querySelector('[data-t="gr"]').click();setTimeout(exportGraph,120);return}exportGraph()});
+function exportGraph(){if(!cy)return;const a=document.createElement("a");a.href=cy.png({full:true,scale:2,bg:document.documentElement.dataset.theme==="light"?"#f4f7fb":"#0b1020",padding:50});a.download=(D.meta.repo||"code-archon")+"-dependency-graph.png";document.body.appendChild(a);a.click();a.remove()}
+setTheme("dark");
+})();
+</script>
+</body>
+</html>
