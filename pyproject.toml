@@ -36,7 +36,7 @@ dev = [
 ]
 
 [project.scripts]
-archon = "archon.cli:app"
+archon = "archon.cli:app"\narchon-ui = "archon.webui:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
