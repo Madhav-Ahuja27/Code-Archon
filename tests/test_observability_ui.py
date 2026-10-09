@@ -104,3 +104,18 @@ def test_customer_and_live_views_distinguish_host_probes_from_run_usage() -> Non
     assert "does not prove this run is configured to use or has used the service" in customer
     assert "run-specific use requires explicit trace evidence" in live
     assert "displayed service and container snapshot may be stale" in live
+
+
+def test_customer_recent_activity_preserves_last_snapshot_when_refresh_fails() -> None:
+    page = (Path(__file__).parents[1] / "archon" / "ui" / "product.html").read_text(encoding="utf-8")
+    assert "runsLoadedOnce=false" in page
+    assert "showing last snapshot" in page
+    assert "The previous list is still displayed." in page
+
+
+def test_live_dashboard_clears_stale_run_selection_when_no_runs_exist() -> None:
+    page = (Path(__file__).parents[1] / "archon" / "observability" / "dashboard.html").read_text(encoding="utf-8")
+    assert "No investigations are available yet." in page
+    assert "activeRun=null" in page
+    assert "No investigation selected. Start one from the customer workspace" in page
+    assert "displayed run snapshot may be stale" in page
