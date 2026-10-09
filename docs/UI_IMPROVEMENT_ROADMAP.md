@@ -34,10 +34,10 @@ This roadmap prioritizes user trust and visibility over decorative polish. Inves
 
 ## Step 4 — Make the systems view easier to operate (partially implemented; runtime verification pending)
 
-- [ ] Group events by investigation stage and collapse repetitive low-level events by default.
+- [x] Group events by investigation stage, with the newest stage expanded and older stages collapsed by default; retain a flat-timeline toggle.
 - [x] Add pause/resume auto-refresh and JSON export for selected-run trace events.
 - [x] Show explicit stale-data/error status when live run refresh fails, while preserving the last event snapshot.
-- [ ] Add broader event-payload copy/export affordances.
+- [x] Add per-event JSON copy alongside whole-trace JSON export.
 - Separate *service reachable*, *service configured*, and *service observed in this run* states.
 - [x] Add keyboard-visible focus states, reduced-motion support, and small-screen layout improvements across the customer, developer, report, and live systems views.
 
