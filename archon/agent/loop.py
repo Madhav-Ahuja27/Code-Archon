@@ -463,7 +463,11 @@ def build_agent_graph(
 
     def wrap(fn, node_name="node"):
         def _wrapped(state_dict):
-            from archon.observability.events import emit_event
+            try:
+                from archon.observability.events import emit_event
+            except Exception:
+                def emit_event(*args, **kwargs):
+                    return None
             state = AgentState(**state_dict)
             before_evidence = len(state.evidence)
             before_findings = len(state.findings)
