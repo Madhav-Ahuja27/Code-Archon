@@ -127,3 +127,22 @@ def infrastructure_snapshot() -> dict[str, Any]:
         ],
         "note": "Read-only point-in-time probes. A reachable port does not guarantee that the application is using that service.",
     }
+
+
+def container_logs(name: str, tail: int = 100) -> dict[str, Any]:
+    """Return a bounded tail for a currently observed relevant container only."""
+    snapshot = _docker_snapshot()
+    allowed = {str(item.get("name", "")) for item in snapshot.get("containers", [])}
+    if not name or name not in allowed:
+        return {"name": name, "logs": "", "error": "Container is not in the current relevant-container snapshot."}
+    if not shutil.which("docker"):
+        return {"name": name, "logs": "", "error": "Docker CLI is unavailable."}
+    try:
+        proc = subprocess.run(
+            ["docker", "logs", "--tail", str(max(1, min(int(tail), 200))), "--timestamps", name],
+            capture_output=True, text=True, timeout=3.0, check=False,
+        )
+        output = (proc.stdout or "") + ("\\n" + proc.stderr if proc.stderr else "")
+        return {"name": name, "logs": output[-24000:], "error": "" if proc.returncode == 0 else output[-2000:]}
+    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
+        return {"name": name, "logs": "", "error": str(exc)[:1000]}
