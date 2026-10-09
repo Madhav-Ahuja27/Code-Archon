@@ -138,6 +138,39 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._send(200, page, "text/html; charset=utf-8")
             return
+        if path == "/live":
+            try:
+                page = (Path(__file__).parent / "observability" / "dashboard.html").read_text(encoding="utf-8")
+            except OSError:
+                self._send(500, "Observability dashboard file is missing.", "text/plain; charset=utf-8")
+                return
+            self._send(200, page, "text/html; charset=utf-8")
+            return
+        if path == "/api/infrastructure":
+            try:
+                from archon.observability.infrastructure import infrastructure_snapshot
+                self._send(200, infrastructure_snapshot())
+            except Exception as exc:
+                self._send(500, {"error": f"Infrastructure probe failed: {exc}"})
+            return
+        events_match = re.fullmatch(r"/api/observability/([a-f0-9-]+)/events", path)
+        if events_match:
+            run_id = events_match.group(1)
+            with _LOCK:
+                run = _RUNS.get(run_id)
+                if not run:
+                    self._send(404, {"error": "Run not found."})
+                    return
+                event_path = run.get("event_path")
+            if not event_path:
+                self._send(200, {"events": [], "message": "No trace path is registered for this run."})
+                return
+            try:
+                from archon.observability.events import read_events
+                self._send(200, {"events": read_events(event_path)})
+            except Exception as exc:
+                self._send(500, {"error": f"Could not read event trace: {exc}"})
+            return
         if path == "/api/open":
             query = parse_qs(urlparse(self.path).query)
             run_id = (query.get("run") or [""])[0]
@@ -221,14 +254,18 @@ class Handler(BaseHTTPRequestHandler):
                     "--goal", goal, "--output", str(output_path), "--max-iter", str(max_iter),
                     "--llm" if use_llm else "--no-llm",
                 ]
+                event_path = output_path / ".archon-observability" / f"{run_id}.jsonl"
+                child_env = os.environ.copy()
+                child_env["ARCHON_EVENT_LOG"] = str(event_path)
                 proc = subprocess.Popen(
                     command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                     text=True, encoding="utf-8", errors="replace", bufsize=1,
-                    cwd=str(Path.cwd()), env=os.environ.copy(),
+                    cwd=str(Path.cwd()), env=child_env,
                 )
                 run = {
                     "id": run_id, "status": "running", "phase": "Starting investigation",
                     "repo": str(repo), "goal": goal, "output_path": output_path,
+                    "event_path": event_path,
                     "use_llm": use_llm, "max_iter": max_iter,
                     "started_at": _now(), "updated_at": _now(), "finished_at": None,
                     "started_epoch": time.time(), "finished_epoch": None,
