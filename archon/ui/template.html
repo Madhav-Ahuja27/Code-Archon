@@ -170,11 +170,12 @@ $("#recoveryDetails").innerHTML='<div class="grid grid3"><div><div class="cardta
 // Evidence explorer
 const toolNames=[...new Set(evidence.map(e=>e.tool||"unknown"))].sort();
 $("#evidenceTool").innerHTML='<option value="">All channels</option>'+toolNames.map(t=>'<option value="'+esc(t)+'">'+esc(t)+'</option>').join("");
+function evidenceRelation(e){if(typeof e.supports==="boolean")return e.supports?"Supports":"Contradicts";const relation=String(e.relation||e.stance||e.polarity||"").toLowerCase();if(["supports","support","positive"].includes(relation))return "Supports";if(["contradicts","contradiction","negative","refutes"].includes(relation))return "Contradicts";if(["insufficient","insufficient_metadata","unknown","unclassified"].includes(relation))return "Insufficient metadata";return "Insufficient metadata";}
 function renderEvidence(){
  const q=($("#evidenceSearch").value||"").toLowerCase(),tool=$("#evidenceTool").value;
  const items=evidence.filter(e=>(!tool||(e.tool||"unknown")===tool)&&(!q||[e.source,e.content,e.tool].join(" ").toLowerCase().includes(q)));
  $("#evidenceCount").textContent=items.length+" / "+evidence.length+" evidence items";
- $("#evidenceTable").innerHTML=items.length?'<div class="tablewrap"><table><thead><tr><th>Channel</th><th>Source citation</th><th>Evidence excerpt</th><th>Source</th></tr></thead><tbody>'+items.map(e=>'<tr><td><span class="pill blue">'+esc(e.tool||"unknown")+'</span></td><td class="mono">'+esc(e.source||"—")+'</td><td>'+esc(clip(e.content,260))+'</td><td>'+(D.sources[e.source]?'<button class="sourcebtn" data-source="'+esc(e.source)+'">Open source ↗</button>':'<span class="muted small">No snippet</span>')+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">No evidence matches this filter.</div>';
+ $("#evidenceTable").innerHTML=items.length?'<div class="tablewrap"><table><thead><tr><th>Channel</th><th>Relation</th><th>Source citation</th><th>Evidence excerpt</th><th>Source</th></tr></thead><tbody>'+items.map(e=>'<tr><td><span class="pill blue">'+esc(e.tool||"unknown")+'</span></td><td><span class="pill amber">'+esc(evidenceRelation(e))+'</span></td><td class="mono">'+esc(e.source||"—")+'</td><td>'+esc(clip(e.content,260))+'</td><td>'+(D.sources[e.source]?'<button class="sourcebtn" data-source="'+esc(e.source)+'">Open source ↗</button>':'<span class="muted small">No snippet</span>')+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">No evidence matches this filter.</div>';
 }
 $("#evidenceSearch").addEventListener("input",renderEvidence);$("#evidenceTool").addEventListener("change",renderEvidence);
 const evidenceToolCounts=Object.entries(tools);
