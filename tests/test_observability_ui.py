@@ -54,3 +54,15 @@ def test_customer_progress_includes_actual_event_timeline_and_service_snapshot()
         "No event does not mean the step did not happen",
     ):
         assert marker in page
+
+
+def test_customer_ui_keeps_navigation_available_on_mobile_and_supports_modal_keyboard_access() -> None:
+    page = (Path(__file__).parents[1] / "archon" / "ui" / "product.html").read_text(encoding="utf-8")
+    assert 'aria-label="Workspace navigation"' in page
+    assert 'id="nav-overview"' in page
+    assert '.sidebar .navlabel,.bottom{display:none}' in page
+    assert '.sidebar .nav{display:flex' in page
+    assert "e.key==='Escape'" in page
+    assert "if(e.key==='Tab')" in page
+    assert "modalReturnFocus.focus()" in page
+    assert "prefers-reduced-motion:reduce" in page
