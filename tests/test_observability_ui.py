@@ -77,4 +77,6 @@ def test_frontend_pages_include_responsive_accessibility_and_trace_controls() ->
     assert 'id="toggle-refresh"' in live and 'id="export-trace"' in live
     assert "Auto-refresh paused" in live
     assert "JSON.stringify(payload,null,2)" in live
+    assert "data may be stale" in live
+    assert "lastSuccessAt" in live
     assert ":focus-visible" in live and "prefers-reduced-motion:reduce" in live
