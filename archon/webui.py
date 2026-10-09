@@ -18,7 +18,7 @@ import uuid
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 _UI_DIR = Path(__file__).parent / "ui"
 _RUNS: dict[str, dict] = {}
@@ -129,6 +129,29 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(500, "Launcher UI file is missing.", "text/plain; charset=utf-8")
                 return
             self._send(200, page, "text/html; charset=utf-8")
+            return
+        if path == "/api/open":
+            query = parse_qs(urlparse(self.path).query)
+            run_id = (query.get("run") or [""])[0]
+            file_kind = (query.get("file") or [""])[0]
+            with _LOCK:
+                run = _RUNS.get(run_id)
+                if not run or run["status"] != "completed":
+                    self._send(404, {"error": "Completed run not found."})
+                    return
+                filename = "index.html" if file_kind == "dashboard" else "report.md" if file_kind == "report" else ""
+                if not filename:
+                    self._send(400, {"error": "Unsupported result file."})
+                    return
+                target = run["output_path"] / filename
+            if not target.is_file():
+                self._send(404, {"error": f"{filename} was not generated."})
+                return
+            content_type = "text/html; charset=utf-8" if filename.endswith(".html") else "text/markdown; charset=utf-8"
+            try:
+                self._send(200, target.read_text(encoding="utf-8", errors="replace"), content_type)
+            except OSError as exc:
+                self._send(500, {"error": f"Could not read result: {exc}"})
             return
         if path == "/api/health":
             self._send(200, {"ok": True, "service": "Code-Archon UI"})
