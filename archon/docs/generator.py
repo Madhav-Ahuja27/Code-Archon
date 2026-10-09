@@ -136,7 +136,7 @@ class DocumentationGenerator:
         """Keep module labels compact while retaining the parent folder."""
         parts = node_id.replace("\\", "/").split("/")
         if len(parts) > 1:
-            return parts[-2] + "\\n" + parts[-1]
+            return parts[-2] + " / " + parts[-1]
         return parts[-1]
 
     def _write_architecture_dot(self, path: Path, modules, edges) -> None:
@@ -173,7 +173,7 @@ class DocumentationGenerator:
                     fn_name = nid.split("::")[-1]
                     module_id = nid.split("::")[0].replace("\\", "/")
                     module_name = module_id.split("/")[-1]
-                    label = self._dot_escape(fn_name + "\\n(" + module_name + ")")
+                    label = self._dot_escape(fn_name + " (" + module_name + ")")
                     tooltip = self._dot_escape(nid)
                     lines.append(f'  "{self._dot_escape(nid)}" [label="{label}", tooltip="{tooltip}"];')
                     written_nodes.add(nid)
