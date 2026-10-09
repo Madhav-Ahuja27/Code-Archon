@@ -217,6 +217,9 @@ function graphElements(){
 }
 function drawGraph(){
  if(!window.cytoscape){$("#cy").innerHTML='<div class="empty">Cytoscape is unavailable in this generated file.</div>';return}
+ const dependencyMode=$("#graphMode").value==="dependencies";
+ $("#edgeFilter").disabled=dependencyMode;
+ if(dependencyMode)$("#edgeFilter").value="";
  const els=graphElements();
  if(cy){cy.destroy();cy=null}
  cy=window.cytoscape({container:$("#cy"),elements:[...els.nodes,...els.edges],minZoom:.08,maxZoom:3,wheelSensitivity:.18,
