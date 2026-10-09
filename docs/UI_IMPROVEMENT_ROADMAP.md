@@ -43,6 +43,10 @@ This roadmap prioritizes user trust and visibility over decorative polish. Inves
 
 ## Step 5 — End-to-end verification (pending)
 
+- [x] Preserve the last customer recent-activity snapshot after refresh failures and clearly mark the stale state.
+- [x] Reset the live dashboard to an explicit no-investigations state instead of silently retaining a previously selected run when the list becomes empty.
+- [x] Add static regression checks for both empty-list and stale-snapshot behaviors.
+
 - Run the focused UI/export tests and full test suite.
 - Execute an actual investigation with available Docker, Neo4j, and Redis services.
 - Confirm that events appear live, that unsupported tasks receive NOT VERIFIED labels, and that infrastructure failures do not change investigation behavior.
