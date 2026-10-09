@@ -9,6 +9,8 @@ def test_live_dashboard_exposes_real_operational_panels() -> None:
     page = (Path(__file__).parents[1] / "archon" / "observability" / "dashboard.html").read_text(encoding="utf-8")
     for marker in (
         "Investigation event stream",
+        "Search events, files, tools…",
+        "Filter event types",
         "Raw process output",
         "Infrastructure",
         "Docker containers",
@@ -38,3 +40,17 @@ def test_event_sink_writes_readable_jsonl_records(monkeypatch, tmp_path) -> None
     events = read_events(target)
     assert [event["event"] for event in events] == ["node_started", "node_completed"]
     assert events[0]["details"]["iteration"] == 1
+
+
+def test_customer_progress_includes_actual_event_timeline_and_service_snapshot() -> None:
+    page = (Path(__file__).parents[1] / "archon" / "ui" / "product.html").read_text(encoding="utf-8")
+    for marker in (
+        "Live activity",
+        "Agent stages",
+        "Evidence and findings",
+        "Full systems view",
+        "/api/observability/",
+        "/api/infrastructure",
+        "No event does not mean the step did not happen",
+    ):
+        assert marker in page
