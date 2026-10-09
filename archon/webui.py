@@ -153,6 +153,16 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 self._send(500, {"error": f"Infrastructure probe failed: {exc}"})
             return
+        if path == "/api/infrastructure/container-logs":
+            query = parse_qs(urlparse(self.path).query)
+            name = (query.get("name") or [""])[0]
+            try:
+                from archon.observability.infrastructure import container_logs
+                result = container_logs(name)
+                self._send(200 if not result.get("error") else 404, result)
+            except Exception as exc:
+                self._send(500, {"error": f"Container log inspection failed: {exc}"})
+            return
         events_match = re.fullmatch(r"/api/observability/([a-f0-9-]+)/events", path)
         if events_match:
             run_id = events_match.group(1)
