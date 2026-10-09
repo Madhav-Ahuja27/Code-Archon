@@ -52,6 +52,8 @@ def test_evidence_relation_labels_require_explicit_structured_metadata() -> None
     root = Path(__file__).parents[1]
     template = (root / "archon" / "ui" / "template.html").read_text(encoding="utf-8")
     assert "function evidenceRelation(e)" in template
+    assert "function evidenceRelationClass(e)" in template
+    assert 'relation==="Supports"?"green":relation==="Contradicts"?"red":"amber"' in template
     assert 'typeof e.supports==="boolean"' in template
     assert 'return e.supports?"Supports":"Contradicts"' in template
     assert 'return "Insufficient metadata"' in template
