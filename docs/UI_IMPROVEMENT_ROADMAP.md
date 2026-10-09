@@ -34,10 +34,11 @@ This roadmap prioritizes user trust and visibility over decorative polish. Inves
 
 ## Step 4 — Make the systems view easier to operate (partially implemented; runtime verification pending)
 
-- Group events by investigation stage and collapse repetitive low-level events by default.
-- Add pause/resume auto-refresh, clear stale-data indicators, and copy/export for event payloads.
+- [ ] Group events by investigation stage and collapse repetitive low-level events by default.
+- [x] Add pause/resume auto-refresh and JSON export for selected-run trace events.
+- [ ] Add explicit stale-data/error state indicators and broader event-payload copy/export affordances.
 - Separate *service reachable*, *service configured*, and *service observed in this run* states.
-- Add accessible color-independent labels, keyboard operation, and small-screen layouts.
+- [x] Add keyboard-visible focus states, reduced-motion support, and small-screen layout improvements across the customer, developer, report, and live systems views.
 
 ## Step 5 — End-to-end verification (pending)
 
