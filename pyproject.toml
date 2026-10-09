@@ -49,4 +49,4 @@ asyncio_mode = "auto"
 addopts = "-v --tb=short"
 
 [tool.setuptools.package-data]
-archon = ["ui/*", "docs/templates/*"]
+archon = ["ui/*", "docs/templates/*", "observability/*.html"]
