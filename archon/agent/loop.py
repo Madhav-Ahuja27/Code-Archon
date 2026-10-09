@@ -465,7 +465,6 @@ def build_agent_graph(
         def _wrapped(state_dict):
             from archon.observability.events import emit_event
             state = AgentState(**state_dict)
-            before_tools = len(state.tool_calls)
             before_evidence = len(state.evidence)
             before_findings = len(state.findings)
             emit_event(
@@ -481,18 +480,6 @@ def build_agent_graph(
                            details={"error": str(exc)[:3000], "task": state.current_task,
                                     "iteration": state.iteration})
                 raise
-            for call in result.tool_calls[before_tools:]:
-                emit_event(
-                    "tool_call", stage=node_name,
-                    message=str(call.get("tool") or "Tool call"),
-                    details={
-                        "tool": call.get("tool", ""),
-                        "input": str(call.get("input", ""))[:3000],
-                        "output": str(call.get("output", ""))[:5000],
-                        "error": str(call.get("error", ""))[:3000],
-                        "source": str(call.get("source", ""))[:1000],
-                    },
-                )
             for evidence in result.evidence[before_evidence:]:
                 emit_event(
                     "evidence_collected", stage=node_name,
