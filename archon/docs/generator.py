@@ -126,30 +126,58 @@ class DocumentationGenerator:
         """Hide tests/docs/examples from diagrams so big repos stay readable."""
         return not node_id.startswith(cls._EXCLUDE) and "/tests/" not in node_id
 
+    @staticmethod
+    def _dot_escape(value: str) -> str:
+        """Escape text for a quoted Graphviz DOT string."""
+        return value.replace("\\", "\\\\").replace('"', '\\"')
+
+    @staticmethod
+    def _module_label(node_id: str) -> str:
+        """Keep module labels compact while retaining the parent folder."""
+        parts = node_id.replace("\\", "/").split("/")
+        if len(parts) > 1:
+            return parts[-2] + "\\n" + parts[-1]
+        return parts[-1]
+
     def _write_architecture_dot(self, path: Path, modules, edges) -> None:
         keep = {n.id for n in modules if self._keep(n.id)}
-        lines = ["digraph architecture {", "  rankdir=LR;", "  node [shape=box];"]
+        lines = [
+            "digraph architecture {",
+            '  graph [label="MODULE DEPENDENCY MAP", labelloc=t, labeljust=l, fontsize=19, fontname="Arial", fontcolor="#24324A", bgcolor="#F7F9FC", pad="0.35", rankdir=LR, nodesep="0.34", ranksep="0.78", splines=true, overlap=false];',
+            '  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=10, margin="0.16,0.11", color="#C7D2FE", fillcolor="#EEF2FF", fontcolor="#263451", penwidth=1.15];',
+            '  edge [color="#8493AD", fontname="Arial", fontsize=8, arrowsize=0.72, penwidth=1.15];',
+        ]
         for nid in sorted(keep):
-            label = nid.replace('"', '\\"')
-            lines.append(f'  "{nid}" [label="{label}"];')
+            label = self._dot_escape(self._module_label(nid))
+            tooltip = self._dot_escape(nid)
+            lines.append(f'  "{self._dot_escape(nid)}" [label="{label}", tooltip="{tooltip}"];')
         for e in edges:
             if e.rel_type == "IMPORTS" and e.source_id in keep and e.target_id in keep:
-                lines.append(f'  "{e.source_id}" -> "{e.target_id}";')
+                lines.append(f'  "{self._dot_escape(e.source_id)}" -> "{self._dot_escape(e.target_id)}";')
         lines.append("}")
         path.write_text("\n".join(lines), encoding="utf-8")
 
     def _write_callgraph_dot(self, path: Path, fn_nodes, call_edges) -> None:
-        lines = ["digraph callgraph {", '  rankdir=TB;', '  node [shape=ellipse];']
+        lines = [
+            "digraph callgraph {",
+            '  graph [label="FUNCTION CALL GRAPH", labelloc=t, labeljust=l, fontsize=19, fontname="Arial", fontcolor="#24324A", bgcolor="#F7F9FC", pad="0.35", rankdir=TB, nodesep="0.24", ranksep="0.58", splines=true, overlap=false];',
+            '  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=9, margin="0.14,0.09", color="#99E6D5", fillcolor="#E7FAF5", fontcolor="#20443F", penwidth=1.05];',
+            '  edge [color="#6C9D99", arrowsize=0.68, penwidth=1.05];',
+        ]
         written_nodes: set[str] = set()
         for e in call_edges:
             if not (self._keep(e.source_id) and self._keep(e.target_id)):
                 continue
             for nid in (e.source_id, e.target_id):
                 if nid not in written_nodes:
-                    label = nid.split("::")[-1].replace('"', '\\"')
-                    lines.append(f'  "{nid}" [label="{label}"];')
+                    fn_name = nid.split("::")[-1]
+                    module_id = nid.split("::")[0].replace("\\", "/")
+                    module_name = module_id.split("/")[-1]
+                    label = self._dot_escape(fn_name + "\\n(" + module_name + ")")
+                    tooltip = self._dot_escape(nid)
+                    lines.append(f'  "{self._dot_escape(nid)}" [label="{label}", tooltip="{tooltip}"];')
                     written_nodes.add(nid)
-            lines.append(f'  "{e.source_id}" -> "{e.target_id}";')
+            lines.append(f'  "{self._dot_escape(e.source_id)}" -> "{self._dot_escape(e.target_id)}";')
         lines.append("}")
         path.write_text("\n".join(lines), encoding="utf-8")
 
