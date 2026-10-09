@@ -33,6 +33,25 @@ def _read_text(path: Path, limit: int = 500_000) -> str:
     except OSError:
         return ""
 
+def _task_verification(task: str, has_verified_finding: bool, unknown_set: set[str]) -> dict[str, str]:
+    """Describe verification independently from whether a task was attempted."""
+    if has_verified_finding:
+        status = "VERIFIED"
+        detail = "A verified finding was recorded for this task."
+    elif task in unknown_set:
+        status = "UNRESOLVED"
+        detail = "The task was attempted but no verified conclusion was established."
+    else:
+        status = "NOT VERIFIED"
+        detail = "No verified finding was linked to this task; treat the result as unknown, not false."
+    return {
+        "status": status,
+        "verification_label": "VERIFIED" if status == "VERIFIED" else "NOT VERIFIED",
+        "status_detail": detail,
+    }
+
+
+
 
 def _artifact(path: Path, kind: str, title: str) -> dict:
     item = {"name": path.name, "title": title, "kind": kind, "exists": path.is_file(),
@@ -203,12 +222,9 @@ def build_ui(store, parse_result, final, repo, goal, session, mode, out_path) ->
     not_verified = []
     for i, task in enumerate(all_tasks):
         matched = [finding for finding in findings if finding["task"] == task]
-        status = "VERIFIED" if matched else ("UNRESOLVED" if task in unknown_set else "NOT VERIFIED")
-        task_row = {"index": i + 1, "task": task, "status": status,
-                    "verification_label": "VERIFIED" if status == "VERIFIED" else "NOT VERIFIED",
-                    "status_detail": "A verified finding was recorded for this task." if status == "VERIFIED" else
-                                     ("The task was attempted but no verified conclusion was established." if status == "UNRESOLVED" else
-                                      "No verified finding was linked to this task; treat the result as unknown, not false."),
+        verification = _task_verification(task, bool(matched), unknown_set)
+        status = verification["status"]
+        task_row = {"index": i + 1, "task": task, **verification,
                     "finding_ids": [f["id"] for f in matched]}
         tasks.append(task_row)
         if status != "VERIFIED":
