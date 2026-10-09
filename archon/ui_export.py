@@ -152,6 +152,15 @@ def build_ui(store, parse_result, final, repo, goal, session, mode, out_path) ->
             "end_line": int(getattr(cls, "end_line", 0) or 0),
         })
 
+    # Embed focused source windows for the code explorer as well as findings.
+    # This keeps the generated dashboard useful offline without copying entire repositories.
+    for ref in [m.id + ":1" for m in module_data] + [
+        item["module"] + ":" + str(item["start_line"])
+        for item in function_data + class_data if item.get("start_line")
+    ]:
+        if ref not in sources and (snippet := _snippet(repo, ref)):
+            sources[ref] = snippet
+
     relation_counts = {}
     for edge in edges:
         relation_counts[edge.rel_type] = relation_counts.get(edge.rel_type, 0) + 1
