@@ -160,6 +160,9 @@ def node_act(state: AgentState, harness=None, ctx_engine=None,
     """ACT: gather evidence. Real tools when ctx_engine+repo_root are given."""
     if harness is not None:
         harness.begin_iteration()
+    # Keep an observational trace for the generated report. This does not alter
+    # tool selection, evidence, verification, or graph-promotion decisions.
+    tool_log_start = len(harness.call_log()) if harness is not None else 0
 
     if ctx_engine is not None and repo_root is not None:
         from archon.agent.evidence import gather_evidence
@@ -185,6 +188,16 @@ def node_act(state: AgentState, harness=None, ctx_engine=None,
                 ))
         except Exception as e:
             state.error = str(e)
+
+    if harness is not None:
+        for call in harness.call_log()[tool_log_start:]:
+            state.tool_calls.append({
+                "tool": call.tool,
+                "input": call.input,
+                "output": str(call.output)[:500] if call.output is not None else "",
+                "error": call.error or "",
+                "source": call.source or "",
+            })
 
     state.phase = AgentPhase.OBSERVE
     return state
