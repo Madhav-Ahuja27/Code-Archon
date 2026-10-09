@@ -49,3 +49,17 @@ def test_snippet_blocks_path_traversal():
     assert _snippet(FIX, "../../pyproject.toml:1") is None
     assert _snippet(FIX, "auth.py:5") is not None
     assert _snippet(FIX, "missing.py:1") is None
+
+
+def test_dashboard_surfaces_backend_and_output_sections(tmp_path):
+    html = _run(tmp_path)
+    d = _data(html)
+    assert "Agent journey" in html
+    assert "Evidence lab" in html
+    assert "Knowledge graph" in html
+    assert "Codebase explorer" in html
+    assert "Generated artefacts" in html
+    assert {"modules", "functions", "classes"} <= d.keys()
+    assert {"agent", "history", "evidence", "artifacts", "tasks"} <= d.keys()
+    assert "tool_calls" in d["agent"]
+    assert isinstance(d["graph"]["edges"], list)
