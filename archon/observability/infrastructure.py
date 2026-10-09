@@ -49,12 +49,12 @@ def _docker_snapshot() -> dict[str, Any]:
         return {"status": "unavailable", "message": str(exc)[:500], "containers": []}
 
 
-def _redis_probe(host: str, port: int) -> dict[str, Any]:
+def _redis_probe(host: str, port: int, redis_url: str = "") -> dict[str, Any]:
     ok, latency, message = _tcp(host, port)
     result: dict[str, Any] = {"name": "Redis", "status": "reachable" if ok else "unavailable", "endpoint": f"{host}:{port}", "latency_ms": latency, "message": message}
     try:
         import redis
-        client = redis.Redis(host=host, port=port, socket_connect_timeout=0.6, socket_timeout=0.6, decode_responses=True)
+        client = redis.Redis.from_url(redis_url or f"redis://{host}:{port}", socket_connect_timeout=0.6, socket_timeout=0.6, decode_responses=True)
         started = time.perf_counter()
         client.ping()
         result.update(status="healthy", latency_ms=round((time.perf_counter() - started) * 1000, 1), message="PING succeeded")
@@ -123,7 +123,7 @@ def infrastructure_snapshot() -> dict[str, Any]:
         "docker": _docker_snapshot(),
         "services": [
             _neo4j_probe(neo_uri, neo_user, neo_password),
-            _redis_probe(redis_host, redis_port),
+            _redis_probe(redis_host, redis_port, redis_url),
         ],
         "note": "Read-only point-in-time probes. A reachable port does not guarantee that the application is using that service.",
     }
