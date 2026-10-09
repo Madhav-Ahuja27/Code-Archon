@@ -93,3 +93,14 @@ def test_live_trace_can_group_events_and_copy_individual_event_payloads() -> Non
         "navigator.clipboard.writeText(JSON.stringify(item,null,2))",
     ):
         assert marker in page
+
+
+def test_customer_and_live_views_distinguish_host_probes_from_run_usage() -> None:
+    root = Path(__file__).parents[1]
+    customer = (root / "archon" / "ui" / "product.html").read_text(encoding="utf-8")
+    live = (root / "archon" / "observability" / "dashboard.html").read_text(encoding="utf-8")
+    assert 'id="live-probe-status"' in customer
+    assert "displayed service statuses may be stale" in customer
+    assert "does not prove this run is configured to use or has used the service" in customer
+    assert "run-specific use requires explicit trace evidence" in live
+    assert "displayed service and container snapshot may be stale" in live
