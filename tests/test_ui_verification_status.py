@@ -46,3 +46,13 @@ def test_findings_have_clickable_source_lines_and_explicit_provenance_gaps() -> 
     assert "No source content has been invented." in template
     assert "No embedded source-line window is available" in template
     assert "data-gap-title" in template
+
+
+def test_evidence_relation_labels_require_explicit_structured_metadata() -> None:
+    root = Path(__file__).parents[1]
+    template = (root / "archon" / "ui" / "template.html").read_text(encoding="utf-8")
+    assert "function evidenceRelation(e)" in template
+    assert 'typeof e.supports==="boolean"' in template
+    assert 'return e.supports?"Supports":"Contradicts"' in template
+    assert 'return "Insufficient metadata"' in template
+    assert "<th>Relation</th>" in template
