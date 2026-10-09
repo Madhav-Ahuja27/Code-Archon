@@ -12,6 +12,8 @@ def test_live_dashboard_exposes_real_operational_panels() -> None:
         "Raw process output",
         "Infrastructure",
         "Docker containers",
+        "View last 100 log lines",
+        "/api/infrastructure/container-logs",
         "/api/infrastructure",
         "/api/observability/",
         "Neo4j",
