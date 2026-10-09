@@ -227,7 +227,7 @@ def build_ui(store, parse_result, final, repo, goal, session, mode, out_path) ->
         task_row = {"index": i + 1, "task": task, **verification,
                     "finding_ids": [f["id"] for f in matched]}
         tasks.append(task_row)
-        if status != "VERIFIED":
+        if status == "NOT VERIFIED":
             not_verified.append({"task": task, "status": status, "reason": task_row["status_detail"],
                                  "evidence_count": 0})
     # Keep a final in-flight hypothesis visible if it was not promoted to a verified graph finding.
@@ -237,7 +237,7 @@ def build_ui(store, parse_result, final, repo, goal, session, mode, out_path) ->
     if isinstance(hypothesis, dict):
         claim = str(hypothesis.get("claim", "") or "").strip()
         hstatus = str(hypothesis.get("status", "PENDING") or "PENDING").upper()
-        if claim and hstatus != "VERIFIED" and not any(x["task"] == claim for x in not_verified):
+        if claim and hstatus != "VERIFIED" and claim not in unknown_set and not any(x["task"] == claim for x in not_verified):
             not_verified.append({"task": claim, "status": hstatus,
                                  "reason": "This hypothesis was not promoted as a verified finding.",
                                  "evidence_count": len(hypothesis.get("evidence", []) or [])})
