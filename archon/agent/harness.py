@@ -66,13 +66,33 @@ class Harness:
         self._check(tool)
         tc = ToolCall(tool=tool, input=kwargs)
         try:
+            from archon.observability.events import emit_event
+            emit_event("tool_started", stage="ACT", message=f"{tool} started",
+                       details={"tool": tool, "input": {k: str(v)[:1500] for k, v in kwargs.items()}})
+        except Exception:
+            pass
+        try:
             result = fn(**kwargs)
             tc.output = result
             tc.source = kwargs.get("source", "")
+            try:
+                from archon.observability.events import emit_event
+                emit_event("tool_completed", stage="ACT", message=f"{tool} completed",
+                           details={"tool": tool, "source": tc.source,
+                                    "output": str(result)[:5000], "error": ""})
+            except Exception:
+                pass
         except (ToolNotPermittedError, ToolCallLimitError):
             raise
         except Exception as e:
             tc.error = str(e)
+            try:
+                from archon.observability.events import emit_event
+                emit_event("tool_failed", stage="ACT", message=f"{tool} failed",
+                           details={"tool": tool, "input": {k: str(v)[:1500] for k, v in kwargs.items()},
+                                    "error": str(e)[:3000]})
+            except Exception:
+                pass
             log.warning("Tool '%s' error: %s — recovery: %s",
                         tool, e, self._config.recovery_strategy)
         finally:
@@ -94,6 +114,15 @@ class Harness:
             "source": f"synthetic:iter_{state.iteration}",
             "output": f"Analyzed goal: {state.goal}",
         }
+        try:
+            from archon.observability.events import emit_event
+            emit_event("tool_started", stage="ACT", message=f"{tool} started",
+                       details={"tool": tool, "input": {}, "synthetic": True})
+            emit_event("tool_completed", stage="ACT", message=f"{tool} completed",
+                       details={"tool": tool, "source": result["source"],
+                                "output": result["output"], "synthetic": True})
+        except Exception:
+            pass
         self._log.append(ToolCall(tool=tool, input={}, output=result["output"],
                                    source=result["source"]))
         return result
