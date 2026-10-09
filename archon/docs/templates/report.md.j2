@@ -1,0 +1,53 @@
+# Code-Archon Investigation Report
+
+**Goal:** {{ goal }}
+**Session:** {{ session_id }}
+**Generated:** {{ generated_at }}
+
+---
+
+## Summary
+
+| Metric | Value |
+|--------|-------|
+| Modules documented | {{ modules | length }} |
+| Verified findings | {{ findings | length }} |
+| Average confidence | {{ "%.2f" | format(avg_confidence) }} |
+| Unknowns remaining | {{ unknowns | length }} |
+
+---
+
+## Verified Findings
+
+{% for finding in findings %}
+### {{ loop.index }}. {{ finding.claim }}
+
+- **Confidence:** {{ "%.2f" | format(finding.confidence) }}
+- **Provenance:** `{{ finding.provenance }}`
+
+{% endfor %}
+
+---
+
+## Modules
+
+{% for mod in modules %}
+### `{{ mod.id }}`
+
+- **Lines:** {{ mod.line_count }}
+- **Avg Complexity:** {{ "%.1f" | format(mod.avg_complexity) }}
+- **Imports:** {{ mod.imports | join(", ") if mod.imports else "none" }}
+
+{% endfor %}
+
+---
+
+## Unknowns
+
+{% if unknowns %}
+{% for u in unknowns %}
+- {{ u }}
+{% endfor %}
+{% else %}
+*All investigation objectives met.*
+{% endif %}

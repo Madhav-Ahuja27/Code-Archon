@@ -1,0 +1,51 @@
+# Module: `{{ module.id }}`
+
+**Path:** `{{ module.path }}`
+**Lines:** {{ module.line_count }}
+**Avg Complexity:** {{ "%.1f" | format(module.avg_complexity) }}
+
+{% if module.docstring %}
+## Description
+
+{{ module.docstring }}
+
+{% endif %}
+
+## Imports
+
+{% if module.imports %}
+{% for imp in module.imports %}
+- `{{ imp }}`
+{% endfor %}
+{% else %}
+*No imports.*
+{% endif %}
+
+## Functions
+
+{% for fn in functions %}
+### `{{ fn.name }}({{ fn.args | join(", ") }}) → {{ fn.return_type or "None" }}`
+
+{% if fn.docstring %}
+{{ fn.docstring }}
+{% endif %}
+
+- **Line:** {{ fn.line_start }}–{{ fn.line_end }}
+- **Complexity:** {{ fn.complexity }}
+- **Calls:** {{ fn.calls | join(", ") if fn.calls else "none" }}
+
+{% endfor %}
+
+## Classes
+
+{% for cls in classes %}
+### `{{ cls.name }}`
+
+{% if cls.docstring %}
+{{ cls.docstring }}
+{% endif %}
+
+- **Bases:** {{ cls.bases | join(", ") if cls.bases else "none" }}
+- **Methods:** {{ cls.methods | join(", ") if cls.methods else "none" }}
+
+{% endfor %}

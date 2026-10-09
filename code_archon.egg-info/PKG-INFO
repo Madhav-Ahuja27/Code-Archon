@@ -1,0 +1,27 @@
+Metadata-Version: 2.4
+Name: code-archon
+Version: 0.1.0
+Summary: AI Archaeologist — autonomous agentic framework for reverse engineering legacy software
+Requires-Python: >=3.11
+Requires-Dist: pydantic>=2.7
+Requires-Dist: python-dotenv>=1.0
+Requires-Dist: rich>=13.7
+Requires-Dist: typer>=0.12
+Requires-Dist: langgraph>=0.2
+Requires-Dist: langchain-core>=0.2
+Requires-Dist: langchain-groq>=0.1
+Requires-Dist: groq>=0.9
+Requires-Dist: neo4j>=5.19
+Requires-Dist: redis>=5.0
+Requires-Dist: networkx>=3.3
+Requires-Dist: chromadb>=0.5
+Requires-Dist: rank-bm25>=0.2
+Requires-Dist: radon>=6.0
+Requires-Dist: gitpython>=3.1
+Requires-Dist: coverage>=7.5
+Requires-Dist: jinja2>=3.1
+Requires-Dist: graphviz>=0.20
+Provides-Extra: dev
+Requires-Dist: pytest>=8.2; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
+Requires-Dist: pytest-cov>=5.0; extra == "dev"

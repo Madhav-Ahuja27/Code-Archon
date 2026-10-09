@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "code-archon"
+version = "0.1.0"
+description = "AI Archaeologist — autonomous agentic framework for reverse engineering legacy software"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.7",
+  "python-dotenv>=1.0",
+  "rich>=13.7",
+  "typer>=0.12",
+  "langgraph>=0.2",
+  "langchain-core>=0.2",
+  "langchain-groq>=0.1",
+  "groq>=0.9",
+  "neo4j>=5.19",
+  "redis>=5.0",
+  "networkx>=3.3",
+  "chromadb>=0.5",
+  "rank-bm25>=0.2",
+  "radon>=6.0",
+  "gitpython>=3.1",
+  "coverage>=7.5",
+  "jinja2>=3.1",
+  "graphviz>=0.20",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+  "pytest-asyncio>=0.23",
+  "pytest-cov>=5.0",
+]
+
+[project.scripts]
+archon = "archon.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["archon*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"
+
+[tool.setuptools.package-data]
+archon = ["ui/*", "docs/templates/*"]

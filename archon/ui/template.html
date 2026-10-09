@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Code-Archon</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14181f;--mut:#667085;--bd:#e3e6ec;--ac:#4f46e5;--ok:#12805c;--warn:#b25e09;--bad:#c0392b;--code:#0f172a;--codetx:#e2e8f0;--hl:#4f46e540;padding-top:env(safe-area-inset-top,0)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1116;--card:#171b22;--tx:#e8ebf0;--mut:#8b94a3;--bd:#262c36;--ac:#818cf8;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}}
+:root[data-theme=dark]{--bg:#0e1116;--card:#171b22;--tx:#e8ebf0;--mut:#8b94a3;--bd:#262c36;--ac:#818cf8;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:18px 20px;border-bottom:1px solid var(--bd);background:var(--card)}
+h1{margin:0;font-size:19px}h1 span{color:var(--ac)}.sub{color:var(--mut);font-size:13px;margin-top:4px}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;border:1px solid var(--bd);color:var(--mut);margin-right:6px}
+.chip.llm{color:var(--ok);border-color:var(--ok)}.chip.heur{color:var(--warn);border-color:var(--warn)}
+nav{display:flex;gap:4px;padding:10px 16px 0;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--bd)}
+nav button{background:none;border:0;border-bottom:2px solid transparent;padding:9px 14px;color:var(--mut);font:inherit;cursor:pointer;white-space:nowrap}
+nav button.on{color:var(--ac);border-color:var(--ac);font-weight:600}
+main{max-width:1100px;margin:0 auto;padding:18px 16px 60px}section{display:none}section.on{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}.stat b{font-size:24px;display:block}.stat span{color:var(--mut);font-size:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-top:14px}
+.task{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}.claim{margin:6px 0 10px;font-size:15.5px}
+.bar{height:6px;background:var(--bd);border-radius:9px;overflow:hidden;width:140px;display:inline-block;vertical-align:middle}.bar i{display:block;height:100%;background:var(--ok)}
+.refs button{margin:4px 6px 0 0;padding:3px 9px;border:1px solid var(--bd);background:var(--bg);color:var(--ac);border-radius:7px;font:12px ui-monospace,Consolas,monospace;cursor:pointer}
+.refs button:hover{border-color:var(--ac)}details{margin-top:10px;color:var(--mut);font-size:13px}details div{margin:4px 0;font-family:ui-monospace,Consolas,monospace;font-size:12px;overflow-wrap:anywhere}
+#cy{height:560px;background:var(--card);border:1px solid var(--bd);border-radius:12px}.note{color:var(--mut);font-size:13px;margin:8px 2px}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 12px;vertical-align:middle}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(680px,100%);background:var(--card);border-left:1px solid var(--bd);transform:translateX(105%);transition:.2s;z-index:9;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0)}
+#drawer.on{transform:none}#dh{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;gap:10px;font:13px ui-monospace,Consolas,monospace;overflow-wrap:anywhere}
+#dh button{background:none;border:0;color:var(--tx);font-size:20px;cursor:pointer}
+#code{margin:0;padding:12px 0;overflow:auto;background:var(--code);color:var(--codetx);flex:1;font:12.5px/1.6 ui-monospace,Consolas,monospace}
+#code div{padding:0 14px;white-space:pre}#code div.h{background:var(--hl);border-left:3px solid var(--ac);padding-left:11px;color:#fff}#code span{color:#64748b;display:inline-block;width:44px;user-select:none}
+.empty{color:var(--mut);padding:24px;text-align:center}
+</style></head><body>
+<header><h1><span>Code-Archon</span> · <em id="repo"></em></h1><div class="sub" id="goal"></div><div class="sub" id="meta" style="margin-top:8px"></div></header>
+<nav id="nav"><button data-t="ov" class="on">Overview</button><button data-t="fi">Findings</button><button data-t="gr">Architecture graph</button><button data-t="un">Unresolved</button></nav>
+<main>
+<section id="ov" class="on"><div class="grid" id="stats"></div><div class="card"><b>How to read this</b><p class="note">Every finding cites <code>file:line</code> locations that the model was actually shown. Claims citing anything else are blocked by the provenance gate. Click any citation to see the real source code.</p></div></section>
+<section id="fi"></section>
+<section id="gr"><div class="note">Module import graph. Node size = lines of code. <span class="leg"><i style="background:#4f46e5"></i>cited by a finding<i style="background:#94a3b8"></i>other module</span></div><div id="cy"></div></section>
+<section id="un"></section>
+</main>
+<div id="drawer"><div id="dh"><span id="dt"></span><button onclick="drawer.classList.remove('on')" aria-label="Close">×</button></div><pre id="code"></pre></div>
+<script>/*__CYTOSCAPE__*/</script>
+<script>
+const D=/*__DATA__*/null,$=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const drawer=$('#drawer');let cy=null;
+if(!D){document.body.innerHTML='<p class="empty">No data embedded.</p>'}else{
+$('#repo').textContent=D.meta.repo;$('#goal').textContent='Goal: '+D.meta.goal;
+const llm=D.meta.mode==='llm';
+$('#meta').innerHTML=`<span class="chip ${llm?'llm':'heur'}">${llm?'LLM-written claims':'Heuristic mode (no LLM) — claims are the task text, evidence is real'}</span><span class="chip">session ${esc(D.meta.session)}</span><span class="chip">${esc(D.meta.generated)}</span>`;
+const S=D.stats,cards=[['modules','Modules'],['functions','Functions'],['classes','Classes'],['calls','Call edges'],['imports','Import edges'],['findings','Verified findings'],['blocked','Blocked by gate'],['unresolved','Unresolved']];
+$('#stats').innerHTML=cards.map(([k,l])=>`<div class="stat"><b>${S[k]}</b><span>${l}</span></div>`).join('');
+$('#fi').innerHTML=D.findings.length?D.findings.map((f,i)=>{const refs=[f.provenance,...f.evidence.map(e=>e.source)].filter((x,j,a)=>x&&a.indexOf(x)===j&&D.sources[x]).slice(0,8);
+return `<div class="card"><div class="task">Task ${i+1} · ${esc(f.task)}</div><div class="claim">${esc(f.claim)}</div>
+<div>confidence <span class="bar"><i style="width:${Math.round(f.confidence*100)}%"></i></span> ${f.confidence.toFixed(2)}</div>
+<div class="refs">${refs.map(r=>`<button data-r="${esc(r)}">${esc(r)}</button>`).join('')}</div>
+<details><summary>${f.evidence.length} evidence items</summary>${f.evidence.map(e=>`<div>[${esc(e.tool)}] ${esc(e.source)} — ${esc(e.content)}</div>`).join('')}</details></div>`}).join(''):'<p class="empty">No verified findings.</p>';
+$('#un').innerHTML=D.unknowns.length?D.unknowns.map(u=>`<div class="card"><div class="task">Could not be verified from this repository's code</div><div class="claim">${esc(u)}</div></div>`).join('')+`<p class="note">${S.blocked} claim(s) were blocked by the provenance gate. Unresolved is an honest result: the evidence may live in an external dependency.</p>`:'<p class="empty">All tasks verified.</p>';
+document.addEventListener('click',e=>{const r=e.target.dataset&&e.target.dataset.r;if(!r)return;const s=D.sources[r];if(!s)return;
+$('#dt').textContent=s.path+':'+s.hl;$('#code').innerHTML=s.lines.map((l,i)=>`<div class="${s.start+i===s.hl?'h':''}"><span>${s.start+i}</span>${esc(l)}</div>`).join('');drawer.classList.add('on')});
+$('#nav').addEventListener('click',e=>{const t=e.target.dataset.t;if(!t)return;document.querySelectorAll('nav button,section').forEach(x=>x.classList.remove('on'));e.target.classList.add('on');$('#'+t).classList.add('on');if(t==='gr')drawGraph()});
+function drawGraph(){if(cy||!window.cytoscape){if(!window.cytoscape)$('#cy').innerHTML='<p class="empty">Graph library not bundled.</p>';return}
+const mx=Math.max(...D.graph.nodes.map(n=>n.lines),1);
+cy=cytoscape({container:$('#cy'),elements:[...D.graph.nodes.map(n=>({data:{id:n.id,label:n.id.split('/').pop(),sz:14+30*Math.sqrt(n.lines/mx),cited:n.cited?1:0,lines:n.lines,fns:n.fns}})),...D.graph.edges.map(([s,t],i)=>({data:{id:'e'+i,source:s,target:t}}))],
+style:[{selector:'node',style:{label:'data(label)','font-size':9,color:'#8b94a3',width:'data(sz)',height:'data(sz)','background-color':'#94a3b8','text-valign':'bottom','text-margin-y':3}},
+{selector:'node[cited=1]',style:{'background-color':'#4f46e5','border-width':2,'border-color':'#a5b4fc'}},{selector:'edge',style:{width:1,'line-color':'#cbd5e1','target-arrow-shape':'triangle','target-arrow-color':'#cbd5e1','curve-style':'bezier',opacity:.6}},
+{selector:'.dim',style:{opacity:.1}}],layout:{name:'cose',animate:false,nodeRepulsion:9000,idealEdgeLength:70}});
+cy.on('tap','node',e=>{const n=e.target,nb=n.closedNeighborhood();cy.elements().addClass('dim');nb.removeClass('dim');$('#cy').title=`${n.id()} · ${n.data('lines')} lines · ${n.data('fns')} functions`});
+cy.on('tap',e=>{if(e.target===cy)cy.elements().removeClass('dim')});cy.on('mouseover','node',e=>{$('#cy').title=`${e.target.id()} · ${e.target.data('lines')} lines · ${e.target.data('fns')} functions`})}
+}
+</script></body></html>
