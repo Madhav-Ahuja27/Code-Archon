@@ -31,7 +31,7 @@ def emit_event(event: str, *, stage: str = "", message: str = "", details: dict[
     try:
         path = Path(target)
         path.parent.mkdir(parents=True, exist_ok=True)
-        line = json.dumps(payload, ensure_ascii=False, default=str) + "\\n"
+        line = json.dumps(payload, ensure_ascii=False, default=str) + "\n"
         with _LOCK:
             with path.open("a", encoding="utf-8") as stream:
                 stream.write(line)
