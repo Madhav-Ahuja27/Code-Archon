@@ -30,5 +30,8 @@ def test_generated_dashboard_has_a_dedicated_not_verified_panel() -> None:
     exporter = (root / "archon" / "ui_export.py").read_text(encoding="utf-8")
     assert 'id="notVerifiedList"' in template
     assert 'id="notVerifiedCount"' in template
+    assert 'id="findingSearch"' in template
+    assert 'id="findingStatus"' in template
+    assert 'function renderFindings()' in template
     assert '"not_verified": not_verified' in exporter
     assert 'No evidence supports a verified conclusion yet' in template
