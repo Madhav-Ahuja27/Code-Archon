@@ -17,7 +17,7 @@ archon-ui
 
 The customer workspace opens at **http://127.0.0.1:8765**. It provides a natural-language investigation form, suggested questions, recent investigation history for the current server session, progress in plain language, and a link to the generated interactive dashboard.
 
-The **developer monitor** remains available at **http://127.0.0.1:8765/dev** for inspecting raw CLI output. The customer page is also available at `/app`.
+The **developer monitor** remains available at **http://127.0.0.1:8765/dev** for inspecting raw CLI output. The **live observability workspace** is at **http://127.0.0.1:8765/live** and is also linked from the customer page. The customer page is also available at `/app`.
 
 Alternatively, run `python -m archon.webui`. Use `python -m archon.webui --no-browser` to suppress automatic browser launch, or `--port 8766` to select another local port.
 
@@ -34,3 +34,16 @@ The workspace currently runs LLM-assisted investigations using the configured Gr
 This is a local-first prototype: investigation history is held in memory by the UI server and will reset when the server restarts. Repository selection currently uses a local path rather than Git-provider OAuth or remote clone flow. Keep the server bound to `127.0.0.1`; it can launch processes against folders accessible to your account and should not be exposed to an untrusted network.
 
 The UI does not change AST parsing, retrieval, graph building, agent behavior, evidence verification, or finding promotion.
+
+
+## Live observability workspace
+
+The `/live` workspace polls the actual run state and shows:
+
+- Structured LangGraph node start/completion/failure events, phase, current task, iteration, evidence/finding counts, verification status, retries, and recorded tool-call inputs/output summaries/errors.
+- The real CLI stdout/stderr captured by the launcher.
+- A point-in-time Docker CLI snapshot for relevant containers, a Neo4j Bolt/authentication probe and graph node count when the driver is available, and Redis PING/basic metrics when reachable.
+
+Structured traces are written as JSONL to `.archon-observability/<run-id>.jsonl` under the chosen output folder. They are best-effort and observational: trace write failures are swallowed so they do not change investigation behavior. Runs started before this instrumentation may only have process logs. Infrastructure data is a snapshot, not proof that the active investigation uses every reachable service; Code-Archon can fall back to in-memory graph or Redis stores.
+
+The observability view can include source excerpts and tool inputs/outputs. Keep the UI bound to localhost and treat the output folder as sensitive. Hidden model chain-of-thought is not exposed; the UI shows operational events, evidence metadata, and returned outputs instead.
