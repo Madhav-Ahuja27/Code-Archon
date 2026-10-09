@@ -66,3 +66,15 @@ def test_customer_ui_keeps_navigation_available_on_mobile_and_supports_modal_key
     assert "if(e.key==='Tab')" in page
     assert "modalReturnFocus.focus()" in page
     assert "prefers-reduced-motion:reduce" in page
+
+
+def test_frontend_pages_include_responsive_accessibility_and_trace_controls() -> None:
+    root = Path(__file__).parents[1]
+    launcher = (root / "archon" / "ui" / "launcher.html").read_text(encoding="utf-8")
+    live = (root / "archon" / "observability" / "dashboard.html").read_text(encoding="utf-8")
+    assert ":focus-visible" in launcher and "prefers-reduced-motion:reduce" in launcher
+    assert ".path-row{flex-wrap:wrap}" in launcher
+    assert 'id="toggle-refresh"' in live and 'id="export-trace"' in live
+    assert "Auto-refresh paused" in live
+    assert "JSON.stringify(payload,null,2)" in live
+    assert ":focus-visible" in live and "prefers-reduced-motion:reduce" in live
