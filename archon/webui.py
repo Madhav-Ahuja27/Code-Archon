@@ -84,7 +84,7 @@ def _read_process(run_id: str, process: subprocess.Popen[str]) -> None:
 def _diagnostics(logs: list[str]) -> dict:
     """Extract useful parser/graph/index/agent counters from the real CLI output."""
     patterns = {
-        "modules": r"Parsed\s+(\d+)\s+modules",
+        "modules": r"Parsed:?\s+(\d+)\s+modules",
         "functions": r"(\d+)\s+functions",
         "parse_errors": r"(\d+)\s+errors",
         "graph_nodes": r"Graph:\s*(\d+)\s+nodes",
