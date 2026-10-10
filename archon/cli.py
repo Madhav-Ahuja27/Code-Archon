@@ -160,6 +160,8 @@ def investigate(
                        "line_end": f.line_end, "class_name": f.class_name, "calls": f.calls,
                        "arguments": f.args, "complexity": f.complexity}
                       for f in parse_result.functions],
+        "relationships": [{"source": e.source_id, "target": e.target_id, "type": e.rel_type}
+                          for e in store.all_edges()[:5000]],
     }
     diagnostics_path.write_text(json.dumps(diagnostics, indent=2, ensure_ascii=False), encoding="utf-8")
     console.print(f"[green]✓[/green] Developer diagnostics written → {diagnostics_path}")
