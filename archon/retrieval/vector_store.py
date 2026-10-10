@@ -186,7 +186,7 @@ class ContextEngine:
         selected: list[Chunk] = []
         used = 0
         for chunk in ranked:
-            header = f"# {chunk.id} [{chunk.file_path}:{chunk.line_start}]\\n"
+            header = f"# {chunk.id} [{chunk.file_path}:{chunk.line_start}]\n"
             remaining = char_budget - used - len(header) - 2
             if remaining <= 0:
                 break
