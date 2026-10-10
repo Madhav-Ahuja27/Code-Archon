@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import sys
 import uuid
 from pathlib import Path
@@ -46,13 +48,30 @@ def investigate(
     keep_graph: bool = typer.Option(False, "--keep-graph",
                                     help="Do not wipe the existing Neo4j graph first"),
     use_llm: bool = typer.Option(True, "--llm/--no-llm",
-                                  help="Use LLM (Groq) or keyword-only mode"),
+                                  help="Use LLM or keyword-only mode"),
+    provider: str = typer.Option("", "--provider", help="LLM provider override: groq, openai, or anthropic"),
+    model: str = typer.Option("", "--model", help="LLM model override"),
+    retrieval_top_k: int = typer.Option(8, "--retrieval-top-k", min=1, max=40, help="Retrieved source chunks per task"),
+    context_tokens: int = typer.Option(6000, "--context-tokens", min=500, max=32000, help="Maximum retrieval context token budget"),
+    tool_call_limit: int = typer.Option(5, "--tool-call-limit", min=1, max=25, help="Calls allowed per tool per iteration"),
+    evidence_limit: int = typer.Option(24, "--evidence-limit", min=4, max=100, help="Maximum evidence items collected per task"),
+    prompt_evidence_limit: int = typer.Option(14, "--prompt-evidence-limit", min=4, max=40, help="Evidence items included in the LLM prompt"),
 ):
     """Run a full investigation on a Python repository."""
     if not repo.exists():
         console.print(f"[red]Repo not found: {repo}[/red]")
         raise typer.Exit(1)
 
+    if provider:
+        if provider.lower() not in {"groq", "openai", "anthropic"}:
+            console.print("[red]Provider must be groq, openai, or anthropic.[/red]")
+            raise typer.Exit(2)
+        os.environ["LLM_PROVIDER"] = provider.lower()
+    if model:
+        os.environ["LLM_MODEL"] = model.strip()
+    os.environ["ARCHON_RETRIEVAL_TOP_K"] = str(retrieval_top_k)
+    os.environ["ARCHON_MAX_EVIDENCE"] = str(evidence_limit)
+    os.environ["ARCHON_PROMPT_EVIDENCE_ITEMS"] = str(prompt_evidence_limit)
     output.mkdir(parents=True, exist_ok=True)
     sid = session_id or f"sess_{uuid.uuid4().hex[:8]}"
     console.print(Panel(
@@ -115,8 +134,35 @@ def investigate(
     bm25.build(chunks)
     vs = VectorStore(use_hash_embed=True)
     vs.add_chunks(chunks)
-    ctx_engine = ContextEngine(bm25, vs)
+    ctx_engine = ContextEngine(bm25, vs, max_tokens=context_tokens)
     console.print(f"[green]✓[/green] Index: {len(chunks)} chunks  (vector backend: {vs.backend})")
+
+    diagnostics_path = output / "archon-diagnostics.json"
+    diagnostics = {
+        "schema_version": 1,
+        "repository": str(repo.resolve()),
+        "session_id": sid,
+        "summary": {
+            "modules": len(parse_result.modules), "classes": len(parse_result.classes),
+            "functions": len(parse_result.functions), "parse_errors": len(parse_result.errors),
+            "graph_nodes": store.node_count(), "call_edges": counts.get("calls", 0),
+            "import_edges": counts.get("imports", 0), "inheritance_edges": counts.get("inherits", 0),
+            "index_chunks": len(chunks), "vector_backend": vs.backend,
+        },
+        "parse_errors": list(parse_result.errors),
+        "modules": [{"path": m.id, "lines": m.line_count, "imports": m.imports,
+                     "external_dependencies": m.external_deps, "average_complexity": m.avg_complexity}
+                    for m in parse_result.modules],
+        "classes": [{"name": c.name, "module": c.module_path, "line_start": c.line_start,
+                     "line_end": c.line_end, "bases": c.bases, "methods": c.methods}
+                    for c in parse_result.classes],
+        "functions": [{"name": f.name, "module": f.module_path, "line_start": f.line_start,
+                       "line_end": f.line_end, "class_name": f.class_name, "calls": f.calls,
+                       "arguments": f.args, "complexity": f.complexity}
+                      for f in parse_result.functions],
+    }
+    diagnostics_path.write_text(json.dumps(diagnostics, indent=2, ensure_ascii=False), encoding="utf-8")
+    console.print(f"[green]✓[/green] Developer diagnostics written → {diagnostics_path}")
 
     # ── Phase 4: Goal analysis ───────────────────────────────────────────────
     from archon.goal_analyzer import InvestigationGoal
@@ -144,7 +190,7 @@ def investigate(
 
     harness = Harness(HarnessConfig(
         allowed_tools={"ast_analysis", "radon", "ripgrep", "git_log", "pytest"},
-        call_limit_per_tool=5,
+        call_limit_per_tool=tool_call_limit,
     ))
 
     graph = build_agent_graph(llm=llm, harness=harness, store=store,
