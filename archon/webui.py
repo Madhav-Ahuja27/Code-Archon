@@ -103,14 +103,17 @@ class Handler(BaseHTTPRequestHandler):
             body = payload.encode("utf-8")
         else:
             body = payload
-        self.send_response(status)
-        self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Content-Type-Options", "nosniff")
-        self.end_headers()
-        self.wfile.write(body)
-
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            # The client disconnected before the response finished.
+            return
     def _body(self) -> dict:
         length = int(self.headers.get("Content-Length", "0"))
         if length <= 0 or length > 64_000:

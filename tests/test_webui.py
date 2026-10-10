@@ -48,3 +48,25 @@ def test_launcher_html_contains_setup_and_live_monitor() -> None:
         "/api/runs/",
     ):
         assert marker in html
+
+
+
+def test_send_ignores_disconnected_client() -> None:
+    class BrokenWriter:
+        def write(self, body: bytes) -> None:
+            raise ConnectionAbortedError("client disconnected")
+
+    class DisconnectedHandler:
+        wfile = BrokenWriter()
+
+        def send_response(self, status: int) -> None:
+            pass
+
+        def send_header(self, name: str, value: str) -> None:
+            pass
+
+        def end_headers(self) -> None:
+            pass
+
+    # A dropped browser connection should not trigger a second HTTP response.
+    webui.Handler._send(DisconnectedHandler(), 200, {"ok": True})

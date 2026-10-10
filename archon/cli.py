@@ -7,6 +7,11 @@ import sys
 import uuid
 from pathlib import Path
 
+# Keep Rich output safe in Windows consoles with legacy code pages.
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8", errors="replace")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
