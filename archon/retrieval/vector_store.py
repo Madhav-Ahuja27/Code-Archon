@@ -179,7 +179,26 @@ class ContextEngine:
         for chunk in bm25_results + vec_results:
             if chunk.id not in seen or chunk.score > seen[chunk.id].score:
                 seen[chunk.id] = chunk
-        return sorted(seen.values(), key=lambda c: c.score, reverse=True)
+        ranked = sorted(seen.values(), key=lambda c: c.score, reverse=True)
+        # Apply the configured context budget to actual retrieval results, not only
+        # to the optional context-window helper. The agent consumes query() directly.
+        char_budget = self._max_tokens * 4
+        selected: list[Chunk] = []
+        used = 0
+        for chunk in ranked:
+            header = f"# {chunk.id} [{chunk.file_path}:{chunk.line_start}]\\n"
+            remaining = char_budget - used - len(header) - 2
+            if remaining <= 0:
+                break
+            if len(chunk.text) > remaining:
+                if not selected:
+                    clipped = Chunk(**chunk.__dict__)
+                    clipped.text = chunk.text[:remaining]
+                    selected.append(clipped)
+                break
+            selected.append(chunk)
+            used += len(header) + len(chunk.text) + 2
+        return selected
 
     def build_context_window(self, chunks: list[Chunk]) -> str:
         char_budget = self._max_tokens * 4
