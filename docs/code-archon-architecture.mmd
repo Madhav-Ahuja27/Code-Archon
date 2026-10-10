@@ -1,0 +1,49 @@
+flowchart TB
+    U["User / developer"] --> ENTRY{"Entry point"}
+    ENTRY --> CLI["CLI: archon investigate"]
+    ENTRY --> WEB["Local web UI: archon-ui"]
+    WEB --> HTTP["archon/webui.py\nHTTP API + run/log state"]
+    HTTP -->|launches subprocess| CLI
+
+    CLI --> ING["Ingestion\nAST parser + Radon"]
+    ING --> PARSE["ParseResult\nmodules, classes, functions, errors"]
+    PARSE --> GB["Graph builder"]
+    PARSE --> IDX["Context chunks"]
+    GB --> GS["Graph store\nNeo4j or in-memory fallback"]
+    GS --> NX["NetworkX mirror\ntraversal / call chains"]
+    IDX --> BM["BM25 keyword index"]
+    IDX --> VS["Vector retrieval\nChromaDB or local fallback"]
+    BM --> CTX["ContextEngine\nhybrid retrieval + context window"]
+    VS --> CTX
+
+    GOAL["Goal analyzer\nLLM-backed or keyword fallback"] --> AGENT
+    CTX --> AGENT["LangGraph investigation loop\nPLAN → ACT → OBSERVE → VERIFY"]
+    GS --> AGENT
+    AGENT --> HARNESS["Tool harness\nallowlist, call limits, trace"]
+    HARNESS --> TOOLS["Tools\nAST / Radon / Semgrep\npytest / coverage / ripgrep / Git"]
+    TOOLS --> EVID["Evidence with file:line provenance"]
+    EVID --> VERIFY["Verification + hallucination gate"]
+    VERIFY -->|supported and grounded| GS
+    VERIFY -->|uncertain / refuted / rejected| AGENT
+
+    AGENT --> SQLITE["SQLite session history"]
+    AGENT --> DOCS["Documentation generator\nJinja2 + Graphviz"]
+    DOCS --> OUT["Markdown reports + module docs + graph assets"]
+    AGENT --> EXPORT["Offline dashboard exporter"]
+    EXPORT --> DASH["Generated HTML dashboard"]
+    WEB -. "optional live telemetry" .-> OBS["Observability\nJSONL events + read-only infra probes"]
+    OBS -. "status / logs / infrastructure" .-> HTTP
+
+    CFG["Config / environment variables"] -.-> CLI
+    CFG -.-> GS
+    CFG -.-> VS
+    CFG -.-> GOAL
+
+    classDef entry fill:#e7f0ff,stroke:#3867a8,color:#172b4d;
+    classDef core fill:#e8f6ee,stroke:#39845a,color:#143b25;
+    classDef store fill:#fff2d9,stroke:#b57a1b,color:#563600;
+    classDef output fill:#f1e8ff,stroke:#7851a9,color:#32204b;
+    class U,ENTRY,CLI,WEB,HTTP entry;
+    class ING,PARSE,GB,IDX,BM,VS,CTX,GOAL,AGENT,HARNESS,TOOLS,EVID,VERIFY core;
+    class GS,NX,SQLITE,CFG,OBS store;
+    class DOCS,OUT,EXPORT,DASH output;
