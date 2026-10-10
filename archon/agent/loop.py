@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from enum import Enum
 from typing import Any, Optional
@@ -27,7 +28,10 @@ from pydantic import BaseModel, Field
 log = logging.getLogger(__name__)
 
 MAX_RETRIES_PER_TASK = 2
-_PROMPT_EVIDENCE_ITEMS = 14
+try:
+    _PROMPT_EVIDENCE_ITEMS = max(4, min(40, int(os.getenv("ARCHON_PROMPT_EVIDENCE_ITEMS", "14"))))
+except ValueError:
+    _PROMPT_EVIDENCE_ITEMS = 14
 
 
 # ── State ─────────────────────────────────────────────────────────────────────
