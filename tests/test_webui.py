@@ -81,9 +81,34 @@ def test_launcher_html_contains_setup_and_live_monitor() -> None:
         "Cancel investigation",
         "Rerun with same configuration",
         "Index / graph diagnostics",
+        "Saved profiles (this browser)",
+        "Graph & index inspector",
+        "LLM provider override",
+        "Retrieval top-k",
+        "Context token budget",
+        "Tool calls per tool / iteration",
+        "Evidence items per task",
     ):
         assert marker in html
 
+
+
+def test_dev_tuning_controls_are_wired_to_cli_and_diagnostics_artifact() -> None:
+    root = Path(webui.__file__).parents[1]
+    cli = (root / "archon" / "cli.py").read_text(encoding="utf-8")
+    evidence = (root / "archon" / "agent" / "evidence.py").read_text(encoding="utf-8")
+    loop = (root / "archon" / "agent" / "loop.py").read_text(encoding="utf-8")
+    server = Path(webui.__file__).read_text(encoding="utf-8")
+    for option in (
+        "--provider", "--model", "--retrieval-top-k", "--context-tokens",
+        "--tool-call-limit", "--evidence-limit", "--prompt-evidence-limit",
+        "archon-diagnostics.json", "parse_errors", "external_dependencies",
+    ):
+        assert option in cli
+    assert "ARCHON_RETRIEVAL_TOP_K" in evidence
+    assert "ARCHON_MAX_EVIDENCE" in evidence
+    assert "ARCHON_PROMPT_EVIDENCE_ITEMS" in loop
+    assert "/inspector" in server
 
 
 def test_send_ignores_disconnected_client() -> None:
