@@ -9,6 +9,7 @@ Every Evidence item produced here carries a real "file:line" source:
 from __future__ import annotations
 
 import logging
+import os
 import re
 from pathlib import Path
 from typing import Optional
@@ -18,7 +19,14 @@ from archon.agent.loop import Evidence
 
 log = logging.getLogger(__name__)
 
-MAX_EVIDENCE = 24
+def _bounded_env_int(name: str, default: int, low: int, high: int) -> int:
+    try:
+        return max(low, min(high, int(os.getenv(name, str(default)))))
+    except (TypeError, ValueError):
+        return default
+
+
+MAX_EVIDENCE = _bounded_env_int("ARCHON_MAX_EVIDENCE", 24, 4, 100)
 
 _STOP = {
     "locate", "review", "files", "file", "code", "and", "the", "for", "with", "from",
@@ -97,7 +105,8 @@ def gather_evidence(
         evidence.append(Evidence(source=source, content=content.strip()[:300], tool=tool))
 
     # 1) hybrid retrieval over indexed functions/classes -----------------------
-    top_k = 8 + 6 * retries
+    base_top_k = _bounded_env_int("ARCHON_RETRIEVAL_TOP_K", 8, 1, 40)
+    top_k = base_top_k + (base_top_k // 2) * retries
     # over-fetch, then drop tests/docs: otherwise test files can fill the whole top-k
     query = task + (" " + " ".join(extra_terms) if extra_terms else "")
     chunks = ctx_engine.query(query, top_k=top_k * 4)
