@@ -63,8 +63,9 @@ def _read_process(run_id: str, process: subprocess.Popen[str]) -> None:
         code = process.wait()
         with _LOCK:
             run["return_code"] = code
-            run["status"] = "completed" if code == 0 else "failed"
-            run["phase"] = "Complete" if code == 0 else "Exited with an error"
+            cancelled = run.get("cancel_requested", False)
+            run["status"] = "cancelled" if cancelled else ("completed" if code == 0 else "failed")
+            run["phase"] = "Cancelled" if cancelled else ("Complete" if code == 0 else "Exited with an error")
             run["finished_at"] = _now()
             run["finished_epoch"] = time.time()
             index = run["output_path"] / "index.html"
@@ -80,11 +81,38 @@ def _read_process(run_id: str, process: subprocess.Popen[str]) -> None:
             run["finished_epoch"] = time.time()
 
 
+def _diagnostics(logs: list[str]) -> dict:
+    """Extract useful parser/graph/index/agent counters from the real CLI output."""
+    patterns = {
+        "modules": r"Parsed\s+(\d+)\s+modules",
+        "functions": r"(\d+)\s+functions",
+        "parse_errors": r"(\d+)\s+errors",
+        "graph_nodes": r"Graph:\s*(\d+)\s+nodes",
+        "call_edges": r"Edges:\s*(\d+)\s+calls",
+        "import_edges": r"(\d+)\s+imports",
+        "inheritance_edges": r"(\d+)\s+inherits",
+        "index_chunks": r"Index:\s*(\d+)\s+chunks",
+        "goal_tasks": r"Goal decomposed into\s+(\d+)\s+tasks",
+        "iterations_used": r"Complete after\s+(\d+)\s+iterations",
+        "verified_findings": r"Verified findings\s*:\s*(\d+)",
+        "rejected_claims": r"Blocked by gate\s*:\s*(\d+)",
+        "unresolved_tasks": r"Unresolved tasks\s*:\s*(\d+)",
+    }
+    found = {}
+    for line in logs:
+        for key, pattern in patterns.items():
+            match = re.search(pattern, line, re.IGNORECASE)
+            if match:
+                found[key] = int(match.group(1))
+    return found
+
+
 def _public_run(run: dict, include_logs: bool = True) -> dict:
     with _LOCK:
         result = {k: v for k, v in run.items() if k not in {"process", "logs", "output_path", "event_path", "command"}}
         result["output_path"] = str(run["output_path"])
         result["logs"] = run["logs"][-500:] if include_logs else []
+        result["diagnostics"] = _diagnostics(run.get("logs", []))
         if run.get("started_epoch"):
             result["elapsed_seconds"] = round((run.get("finished_epoch") or time.time()) - run["started_epoch"])
         return result
@@ -227,7 +255,32 @@ class Handler(BaseHTTPRequestHandler):
         self._send(404, {"error": "Not found."})
 
     def do_POST(self) -> None:
-        if urlparse(self.path).path != "/api/investigations":
+        request_path = urlparse(self.path).path
+        cancel_match = re.fullmatch(r"/api/runs/([a-f0-9-]+)/cancel", request_path)
+        if cancel_match:
+            run_id = cancel_match.group(1)
+            with _LOCK:
+                run = _RUNS.get(run_id)
+                if not run:
+                    self._send(404, {"error": "Run not found."})
+                    return
+                if run["status"] != "running":
+                    self._send(409, {"error": "Only a running investigation can be cancelled."})
+                    return
+                run["cancel_requested"] = True
+                run["phase"] = "Cancelling investigation"
+                run["updated_at"] = _now()
+                process = run.get("process")
+                if process and process.poll() is None:
+                    try:
+                        process.terminate()
+                    except OSError as exc:
+                        run["cancel_requested"] = False
+                        self._send(500, {"error": f"Could not cancel investigation: {exc}"})
+                        return
+                self._send(202, _public_run(run))
+            return
+        if request_path != "/api/investigations":
             self._send(404, {"error": "Not found."})
             return
         try:
@@ -257,6 +310,21 @@ class Handler(BaseHTTPRequestHandler):
             if output_path == repo or repo in output_path.parents:
                 raise ValueError("Output folder cannot be the repository folder or a folder inside it.")
             use_llm = bool(data.get("use_llm", True))
+            keep_graph = bool(data.get("keep_graph", False))
+            session_id = str(data.get("session_id", "")).strip()
+            if session_id and not re.fullmatch(r"[A-Za-z0-9_.-]{1,100}", session_id):
+                raise ValueError("Session ID may contain only letters, numbers, dots, underscores, and hyphens (up to 100 characters).")
+            raw_tasks = data.get("tasks", [])
+            if not isinstance(raw_tasks, list) or len(raw_tasks) > 20:
+                raise ValueError("Provide at most 20 additional investigation tasks.")
+            tasks = []
+            for raw_task in raw_tasks:
+                task_text = str(raw_task).strip()
+                if not task_text:
+                    continue
+                if len(task_text) > 500:
+                    raise ValueError("Each investigation task must be 500 characters or fewer.")
+                tasks.append(task_text)
             with _LOCK:
                 if any(r["status"] == "running" for r in _RUNS.values()):
                     self._send(409, {"error": "An investigation is already running. Wait for it to finish before starting another."})
@@ -267,6 +335,12 @@ class Handler(BaseHTTPRequestHandler):
                     "--goal", goal, "--output", str(output_path), "--max-iter", str(max_iter),
                     "--llm" if use_llm else "--no-llm",
                 ]
+                if keep_graph:
+                    command.append("--keep-graph")
+                if session_id:
+                    command.extend(["--session-id", session_id])
+                for task_text in tasks:
+                    command.extend(["--task", task_text])
                 event_path = output_path / ".archon-observability" / f"{run_id}.jsonl"
                 child_env = os.environ.copy()
                 child_env["ARCHON_EVENT_LOG"] = str(event_path)
@@ -280,6 +354,8 @@ class Handler(BaseHTTPRequestHandler):
                     "repo": str(repo), "goal": goal, "output_path": output_path,
                     "event_path": event_path,
                     "use_llm": use_llm, "max_iter": max_iter,
+                    "keep_graph": keep_graph, "session_id": session_id, "tasks": tasks,
+                    "cancel_requested": False,
                     "started_at": _now(), "updated_at": _now(), "finished_at": None,
                     "started_epoch": time.time(), "finished_epoch": None,
                     "return_code": None, "dashboard_exists": False, "dashboard_path": "",
