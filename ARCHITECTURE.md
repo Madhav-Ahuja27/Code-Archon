@@ -1,6 +1,135 @@
-# Code-Archon — Architecture Document
+# Code-Archon — Architecture Guide
 
-**Current Implementation vs. Synopsis Specification**
+**Purpose:** explain the implementation that exists in this branch, how a run moves through the code, where results are stored, and which modules are optional or not yet wired into the main path.
+
+> **Quick reading path:** start with the diagram, then read “Repository map” and “End-to-end execution”. The later synopsis comparison is retained as project-history/context; it is not a promise that every originally proposed feature is implemented.
+
+## Current system at a glance
+
+The standalone Mermaid source for this diagram lives at [docs/code-archon-architecture.mmd](docs/code-archon-architecture.mmd).
+
+```mermaid
+flowchart TB
+    U["User / developer"] --> ENTRY{"Entry point"}
+    ENTRY --> CLI["CLI: archon investigate"]
+    ENTRY --> WEB["Local web UI: archon-ui"]
+    WEB --> HTTP["archon/webui.py — local HTTP server"]
+    HTTP -->|"launches subprocess"| CLI
+
+    CLI --> ING["Python AST ingestion + Radon"]
+    ING --> PARSE["ParseResult"]
+    PARSE --> GB["Graph builder"]
+    PARSE --> IDX["Retrieval chunks"]
+    GB --> GS["Neo4j / in-memory graph"]
+    GS --> NX["NetworkX graph analysis"]
+    IDX --> BM["BM25 keyword index"]
+    IDX --> VS["Vector index: ChromaDB / fallback"]
+    BM --> CTX["Hybrid ContextEngine"]
+    VS --> CTX
+    GOAL["GoalAnalyzer: LLM or keywords"] --> AGENT
+    CTX --> AGENT["LangGraph agent loop"]
+    GS --> AGENT
+    AGENT --> HARNESS["Tool harness + limits"]
+    HARNESS --> TOOLS["Static / runtime / search / Git tools"]
+    TOOLS --> EVID["Evidence with source locations"]
+    EVID --> VERIFY["Verification + provenance gate"]
+    VERIFY -->|"grounded finding"| GS
+    VERIFY -->|"uncertain / rejected"| AGENT
+    AGENT --> SQLITE["SQLite session snapshots"]
+    AGENT --> DOCS["Jinja2 documentation + Graphviz"]
+    DOCS --> OUT["Markdown reports + graph assets"]
+    AGENT --> EXPORT["Offline HTML dashboard exporter"]
+    EXPORT --> DASH["Generated dashboard"]
+    WEB -.-> OBS["JSONL events + read-only infra probes"]
+    OBS -.-> HTTP
+    CFG["Environment / config"] -.-> CLI
+    CFG -.-> GOAL
+    CFG -.-> GS
+    CFG -.-> VS
+```
+
+### The mental model
+
+Code-Archon is a **Python repository investigation pipeline** wrapped by a CLI and a local browser UI. It parses the target repository first, then builds two complementary forms of context: a relationship graph and a searchable code index. A LangGraph state machine uses those contexts and bounded tools to investigate tasks. Findings are checked against evidence and source provenance before being promoted to the graph. Finally, the run is saved and rendered into documentation and an offline dashboard.
+
+The browser UI is an adapter, not a second analysis engine: it validates launch options, starts the CLI as a subprocess, and presents run status/logs. Observability is designed to be best-effort and should not change investigation results.
+
+## Repository map
+
+| Path | Responsibility | How it participates |
+|---|---|---|
+| `archon/cli.py` | Main Typer CLI and orchestration | Owns the end-to-end `investigate` flow; also exposes the other CLI commands defined in the module |
+| `archon/webui.py` | Local browser UI and HTTP handlers | Starts/monitors CLI subprocesses and exposes run/status/log/infrastructure endpoints |
+| `archon/config.py` | Environment-backed settings | LLM, Neo4j, Redis, Chroma, agent limits and output/data paths |
+| `archon/goal_analyzer.py` | Objective decomposition | Converts a plain-language goal into an `InvestigationGoal`; keyword fallback works without an LLM |
+| `archon/llm.py` | LLM factory | Builds a LangChain chat model for configured providers; Groq is the default configuration, with provider-specific branches for Anthropic/OpenAI |
+| `archon/repo_summary.py` | Compact factual repository summary | Grounds goal decomposition and search-term suggestions in the parsed source tree |
+| `archon/ingestion/ast_parser.py` | Python source ingestion | Produces Pydantic `ParseResult`, `ModuleNode`, `ClassNode`, and `FunctionNode` records, with parse errors retained |
+| `archon/ingestion/git_reader.py` | Git ingestion placeholder | Currently a stub; Git history helpers used by tools live in `archon/tools/git_tools.py` |
+| `archon/graph/builder.py` | Graph construction | Resolves imports, calls, inheritance and containment from parsed symbols; ambiguous matches are intentionally skipped |
+| `archon/graph/neo4j_client.py` | Graph persistence abstraction | Exposes node/edge models and a Neo4j store with an in-memory fallback |
+| `archon/graph/network_graph.py` | In-process graph algorithms | Mirrors the store into NetworkX for entry-point, dead-code, cycle and call-chain queries |
+| `archon/retrieval/bm25.py` | Lexical retrieval | BM25 ranking over source chunks |
+| `archon/retrieval/vector_store.py` | Vector retrieval and context assembly | ChromaDB-backed index with fallback behavior; `ContextEngine` combines lexical/vector hits and builds bounded context |
+| `archon/agent/loop.py` | Investigation state machine | LangGraph nodes implement planning, evidence gathering, observation, verification, graph update, unknown identification and bounded retries |
+| `archon/agent/harness.py` | Tool execution policy | Enforces tool allowlists and per-tool call limits; records calls and emits observational events |
+| `archon/agent/evidence.py` | Evidence collection | Combines retrieval, literal search and graph context into evidence items with `file:line` provenance |
+| `archon/tools/static.py` | Static analysis tools | AST inspection, Radon complexity and optional Semgrep |
+| `archon/tools/runtime.py` | Runtime checks | Pytest and coverage subprocess wrappers |
+| `archon/tools/search.py` | Source search | ripgrep with a pure-Python fallback |
+| `archon/tools/git_tools.py` | Git metadata | Commit log, blame and diff helpers through GitPython |
+| `archon/verification/harness.py` | Evidence-based verdicts | Returns VERIFIED, REFUTED or UNCERTAIN plus supporting/contradicting evidence |
+| `archon/verification/hallucination.py` | Provenance gate | Rejects promotion when evidence has no recognizable source-location reference |
+| `archon/memory/sqlite_store.py` | Run/session persistence | Stores session metadata and serialized iteration snapshots in SQLite |
+| `archon/memory/redis_store.py` | Cross-session summary storage | Redis-backed summary store and in-memory mock; available as a module, but not part of the main `investigate` path shown in the CLI |
+| `archon/docs/generator.py` | Report generation | Renders reports/module docs and Graphviz artifacts from parse/graph data |
+| `archon/docs/templates/` | Jinja2 templates | Templates for report and per-module documentation |
+| `archon/ui_export.py` | Offline dashboard assembly | Embeds run data, artifacts and safe source snippets into generated HTML |
+| `archon/ui/template.html` | Dashboard frontend template | HTML/CSS/JS for the generated dashboard and UI assets |
+| `archon/ui/cytoscape.min.js` | Graph visualization dependency | Bundled client-side graph rendering library |
+| `archon/observability/events.py` | Best-effort event sink | Writes JSONL events only when `ARCHON_EVENT_LOG` is configured; failures are swallowed |
+| `archon/observability/infrastructure.py` | Read-only dependency probes | Best-effort checks for services/containers used by the live UI |
+| `tests/` | Unit, extended and regression tests | Tests module behavior, evidence/provenance, UI export and regressions |
+| `pyproject.toml` | Packaging and dependencies | Declares Python >=3.11, console scripts, optional dev dependencies and packaged UI/templates |
+| `CODE_ARCHON_RECOMMENDATIONS.md` | Follow-up engineering notes | Separates already-implemented fixes from recommendations still needing review |
+
+Some generated/package metadata (for example `code_archon.egg-info/SOURCES.txt`) can lag behind the working tree; use the actual package files and `pyproject.toml` as the source of truth.
+
+## Entry points
+
+- **CLI:** `archon investigate <repo> --goal "..." [--output ./output] [--max-iter 15]`
+- **Browser UI:** `archon-ui` launches the local UI server; the UI invokes the CLI rather than duplicating its pipeline.
+- **Python package:** modules can also be imported directly for tests and targeted programmatic use.
+
+## End-to-end execution
+
+1. **Validate input and prepare output.** The CLI checks the target repository path, creates the output directory and chooses a session ID.
+2. **Parse the repository.** `parse_repository()` walks Python files and extracts modules, classes, functions, imports, call names, line ranges and complexity metadata. Syntax/IO problems are collected rather than treated as a complete stop.
+3. **Build the knowledge graph.** `build_graph()` adds module/symbol nodes and relationships to the selected graph store. The CLI clears the store by default for a clean run; `--keep-graph` opts out. This matters when using a persistent Neo4j instance.
+4. **Build retrieval indexes.** The parser output becomes chunks. BM25 supports keyword matching; the vector backend supports semantic-ish similarity. The `ContextEngine` fuses results and respects a context-size budget.
+5. **Decompose the goal.** Explicit repeated `--task` values bypass decomposition. Otherwise `GoalAnalyzer` uses the configured LLM when available and falls back to keyword rules.
+6. **Run the agent loop.** The LangGraph state machine selects a task, gathers evidence, forms/updates a hypothesis and chooses whether to continue, retry or mark work unresolved. Iteration and per-task retry limits prevent unbounded loops.
+7. **Collect evidence through bounded tools.** The harness checks the allowlist and per-tool call budget. Evidence can come from hybrid retrieval, ripgrep and graph relationships; evidence records retain source locations.
+8. **Verify before promotion.** Verdicts are VERIFIED, REFUTED or UNCERTAIN. The provenance gate prevents unsupported claims from being promoted to the knowledge graph. Unverified work is reported as unresolved/unknown rather than silently treated as false.
+9. **Persist and generate outputs.** The CLI saves the final state in `output/session.db`, then the documentation generator creates reports and graph assets. The UI exporter produces an offline HTML dashboard that references evidence/source snippets and generated artifacts.
+10. **Observe the run (optional).** If configured, the event sink writes JSONL trace events. The browser UI can present process logs and read-only infrastructure status; telemetry is best-effort and should not affect analysis behavior.
+
+## Important boundaries and caveats
+
+- **Python-first analysis:** the parser is designed around Python ASTs. It is not a language-agnostic parser despite the wider reverse-engineering goal.
+- **Heuristic graph edges:** call/import/inheritance resolution is static and name-based. The builder skips ambiguous candidates rather than pretending to know the exact runtime target.
+- **Retrieval is approximate:** the lexical/hash embedding fallback is deterministic and offline-friendly, but it is not equivalent to a trained semantic embedding model.
+- **Graph persistence differs by environment:** Neo4j provides persistence; the in-memory store is useful for local tests/fallbacks but disappears with the process.
+- **Optional services are optional:** Redis and external LLM services require configuration and may be unavailable; the primary CLI can fall back for goal decomposition and graph storage, but LLM verification behavior can be more limited without a model.
+- **Runtime tools are subprocesses, not a security sandbox:** do not treat the harness as isolation for running untrusted target repositories.
+- **UI observability is non-authoritative:** infrastructure probes and log/event status are diagnostic. They do not replace the result/evidence state saved by the investigation.
+- **No test execution was performed as part of writing this architecture documentation.**
+
+---
+
+## Historical / specification comparison
+
+The following sections preserve the earlier synopsis-to-implementation comparison. Treat the synopsis as the original design target; the current repository map and execution description above take precedence where implementation has evolved.
 
 ---
 
