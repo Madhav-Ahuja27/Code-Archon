@@ -33,6 +33,35 @@ def test_public_run_omits_process_and_command() -> None:
     assert result["elapsed_seconds"] >= 0
 
 
+def test_diagnostics_extract_real_cli_counters() -> None:
+    logs = [
+        "✓ Parsed: 12 modules, 44 functions, 1 errors",
+        "✓ Edges: 8 calls, 10 imports, 2 inherits",
+        "✓ Graph: 25 nodes",
+        "✓ Index: 70 chunks (vector backend: hash)",
+        "✓ Goal decomposed into 4 tasks",
+        "✓ Complete after 3 iterations",
+        "  Verified findings : 2",
+        "  Blocked by gate   : 1",
+        "  Unresolved tasks  : 5",
+    ]
+    assert webui._diagnostics(logs) == {
+        "modules": 12,
+        "functions": 44,
+        "parse_errors": 1,
+        "call_edges": 8,
+        "import_edges": 10,
+        "inheritance_edges": 2,
+        "graph_nodes": 25,
+        "index_chunks": 70,
+        "goal_tasks": 4,
+        "iterations_used": 3,
+        "verified_findings": 2,
+        "rejected_claims": 1,
+        "unresolved_tasks": 5,
+    }
+
+
 def test_launcher_html_contains_setup_and_live_monitor() -> None:
     html = (Path(webui.__file__).parent / "ui" / "launcher.html").read_text(encoding="utf-8")
     for marker in (
@@ -46,6 +75,12 @@ def test_launcher_html_contains_setup_and_live_monitor() -> None:
         "Execution log",
         "/api/investigations",
         "/api/runs/",
+        "Advanced developer controls",
+        "Keep existing Neo4j graph",
+        "Explicit investigation tasks",
+        "Cancel investigation",
+        "Rerun with same configuration",
+        "Index / graph diagnostics",
     ):
         assert marker in html
 
