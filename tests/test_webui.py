@@ -117,6 +117,25 @@ def test_dev_tuning_controls_are_wired_to_cli_and_diagnostics_artifact() -> None
     assert "/inspector" in server
 
 
+def test_context_token_budget_limits_actual_retrieval_results() -> None:
+    from archon.retrieval.bm25 import Chunk
+    from archon.retrieval.vector_store import ContextEngine
+
+    class FakeIndex:
+        def query(self, query: str, top_k: int = 10):
+            return [Chunk(id="module.py::route", text="x" * 5000,
+                          file_path="module.py", line_start=1, line_end=100, score=1.0)]
+
+    class FakeVectorStore:
+        def query(self, query: str, top_k: int = 10):
+            return []
+
+    engine = ContextEngine(FakeIndex(), FakeVectorStore(), max_tokens=50)
+    result = engine.query("route", top_k=1)
+    assert len(result) == 1
+    assert len(result[0].text) < 200
+
+
 def test_send_ignores_disconnected_client() -> None:
     class BrokenWriter:
         def write(self, body: bytes) -> None:
