@@ -243,6 +243,23 @@ class Handler(BaseHTTPRequestHandler):
                 runs = sorted(_RUNS.values(), key=lambda r: r["started_epoch"], reverse=True)
                 self._send(200, {"runs": [_public_run(r, include_logs=False) for r in runs[:20]]})
             return
+        inspector_match = re.fullmatch(r"/api/runs/([a-f0-9-]+)/inspector", path)
+        if inspector_match:
+            with _LOCK:
+                run = _RUNS.get(inspector_match.group(1))
+                if not run:
+                    self._send(404, {"error": "Run not found."})
+                    return
+                diagnostics_file = run["output_path"] / "archon-diagnostics.json"
+            if not diagnostics_file.is_file():
+                self._send(409, {"error": "Detailed diagnostics are not available yet. Wait for parsing and indexing to finish."})
+                return
+            try:
+                payload = json.loads(diagnostics_file.read_text(encoding="utf-8"))
+                self._send(200, payload)
+            except (OSError, json.JSONDecodeError) as exc:
+                self._send(500, {"error": f"Could not read developer diagnostics: {exc}"})
+            return
         match = re.fullmatch(r"/api/runs/([a-f0-9-]+)", path)
         if match:
             with _LOCK:
@@ -310,6 +327,28 @@ class Handler(BaseHTTPRequestHandler):
             if output_path == repo or repo in output_path.parents:
                 raise ValueError("Output folder cannot be the repository folder or a folder inside it.")
             use_llm = bool(data.get("use_llm", True))
+            provider = str(data.get("provider", "")).strip().lower()
+            model = str(data.get("model", "")).strip()
+            if provider and provider not in {"groq", "openai", "anthropic"}:
+                raise ValueError("LLM provider must be Groq, OpenAI, or Anthropic.")
+            if len(model) > 200:
+                raise ValueError("Model name must be 200 characters or fewer.")
+            try:
+                retrieval_top_k = int(data.get("retrieval_top_k", 8))
+                context_tokens = int(data.get("context_tokens", 6000))
+                tool_call_limit = int(data.get("tool_call_limit", 5))
+                evidence_limit = int(data.get("evidence_limit", 24))
+                prompt_evidence_limit = int(data.get("prompt_evidence_limit", 14))
+            except (TypeError, ValueError):
+                raise ValueError("Advanced tuning values must be whole numbers.") from None
+            bounds = [(retrieval_top_k, 1, 40, "Retrieval top-k"),
+                      (context_tokens, 500, 32000, "Context token budget"),
+                      (tool_call_limit, 1, 25, "Tool call limit"),
+                      (evidence_limit, 4, 100, "Evidence limit"),
+                      (prompt_evidence_limit, 4, 40, "Prompt evidence limit")]
+            for value, low, high, label in bounds:
+                if not low <= value <= high:
+                    raise ValueError(f"{label} must be between {low} and {high}.")
             keep_graph = bool(data.get("keep_graph", False))
             session_id = str(data.get("session_id", "")).strip()
             if session_id and not re.fullmatch(r"[A-Za-z0-9_.-]{1,100}", session_id):
@@ -334,7 +373,16 @@ class Handler(BaseHTTPRequestHandler):
                     sys.executable, "-m", "archon.cli", "investigate", str(repo),
                     "--goal", goal, "--output", str(output_path), "--max-iter", str(max_iter),
                     "--llm" if use_llm else "--no-llm",
+                    "--retrieval-top-k", str(retrieval_top_k),
+                    "--context-tokens", str(context_tokens),
+                    "--tool-call-limit", str(tool_call_limit),
+                    "--evidence-limit", str(evidence_limit),
+                    "--prompt-evidence-limit", str(prompt_evidence_limit),
                 ]
+                if provider:
+                    command.extend(["--provider", provider])
+                if model:
+                    command.extend(["--model", model])
                 if keep_graph:
                     command.append("--keep-graph")
                 if session_id:
@@ -344,6 +392,10 @@ class Handler(BaseHTTPRequestHandler):
                 event_path = output_path / ".archon-observability" / f"{run_id}.jsonl"
                 child_env = os.environ.copy()
                 child_env["ARCHON_EVENT_LOG"] = str(event_path)
+                if provider:
+                    child_env["LLM_PROVIDER"] = provider
+                if model:
+                    child_env["LLM_MODEL"] = model
                 proc = subprocess.Popen(
                     command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                     text=True, encoding="utf-8", errors="replace", bufsize=1,
@@ -354,6 +406,10 @@ class Handler(BaseHTTPRequestHandler):
                     "repo": str(repo), "goal": goal, "output_path": output_path,
                     "event_path": event_path,
                     "use_llm": use_llm, "max_iter": max_iter,
+                    "provider": provider, "model": model,
+                    "retrieval_top_k": retrieval_top_k, "context_tokens": context_tokens,
+                    "tool_call_limit": tool_call_limit, "evidence_limit": evidence_limit,
+                    "prompt_evidence_limit": prompt_evidence_limit,
                     "keep_graph": keep_graph, "session_id": session_id, "tasks": tasks,
                     "cancel_requested": False,
                     "started_at": _now(), "updated_at": _now(), "finished_at": None,
