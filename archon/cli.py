@@ -185,7 +185,7 @@ def investigate(
     if use_llm:
         try:
             from archon.llm import make_llm
-            llm = make_llm()
+            llm = make_llm(provider=provider or None, model=model or None)
             console.print("[green]✓[/green] LLM connected")
         except Exception as e:
             console.print(f"[yellow]⚠[/yellow] LLM unavailable ({e}) — heuristic mode")
